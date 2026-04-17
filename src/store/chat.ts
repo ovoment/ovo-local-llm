@@ -29,6 +29,7 @@ import { saveAttachment, readAttachmentAsDataUrl } from "../lib/attachmentStorag
 import { useMcpStore } from "./mcp";
 import { mcpCall } from "../lib/mcp";
 import { parseToolUseBlock, buildToolsSystemMessage, BUILTIN_TOOLS, isBuiltinTool } from "../lib/toolUse";
+import { useModelProfilesStore } from "./model_profiles";
 import { useToastsStore } from "./toasts";
 // [END]
 
@@ -404,17 +405,41 @@ export const useChatStore = create<ChatStoreState>((set, get) => {
         .messages.filter((m) => m.id !== assistant.id);
       const wire = await Promise.all(liveMessages.map(messageToWire));
 
-      // [START] Phase 6.1 — prepend project context as transient system message.
+      // [START] Phase 6.4 — active model profile: persona + user honorific +
+      // (optional) extra instructions get prepended to the system prompt.
+      // Sampling overrides from the profile are applied just before streamChat
+      // below. Profile system blocks merge into the same wire[0] system slot
+      // as project context / MCP tools so there's exactly one system message.
+      const activeProfile = useModelProfilesStore.getState().getActive();
+      const profileLines: string[] = [];
+      if (activeProfile?.persona) profileLines.push(activeProfile.persona);
+      if (activeProfile?.user_honorific) {
+        profileLines.push(
+          `사용자를 부를 때는 "${activeProfile.user_honorific}"라고 해.`,
+        );
+      }
+      if (activeProfile?.system_prompt_extra) {
+        profileLines.push(activeProfile.system_prompt_extra);
+      }
+      const profileSystemPrompt = profileLines.join("\n\n");
+      // [END]
+
+      // [START] Phase 6.1 + 6.4 — prepend transient system message combining:
+      //   1. active profile's persona / honorific / extra instructions
+      //   2. project context (CLAUDE.md etc)
+      //   3. per-session system_prompt (user-authored)
       // NOT persisted to DB — injected only at wire-build time.
       const effectiveContextPrompt = useProjectContextStore.getState().getEffectivePrompt();
-      if (effectiveContextPrompt) {
-        const sessions2 = useSessionsStore.getState();
-        const sess = sessions2.sessions.find((s) => s.id === sessionId);
-        const sessionSystemPrompt = sess?.system_prompt ?? null;
-        const combinedSystem = sessionSystemPrompt
-          ? `${effectiveContextPrompt}\n\n${sessionSystemPrompt}`
-          : effectiveContextPrompt;
-        wire.unshift({ role: "system", content: combinedSystem });
+      const sessions2 = useSessionsStore.getState();
+      const sessForPrompt = sessions2.sessions.find((s) => s.id === sessionId);
+      const sessionSystemPrompt = sessForPrompt?.system_prompt ?? null;
+      const systemBlocks = [
+        profileSystemPrompt || null,
+        effectiveContextPrompt || null,
+        sessionSystemPrompt || null,
+      ].filter((b): b is string => !!b && b.length > 0);
+      if (systemBlocks.length > 0) {
+        wire.unshift({ role: "system", content: systemBlocks.join("\n\n") });
       }
       // [END]
 
@@ -502,24 +527,25 @@ export const useChatStore = create<ChatStoreState>((set, get) => {
       let toolCallDetected: Awaited<ReturnType<typeof parseToolUseBlock>> = null;
       // [END]
 
-      // [START] Phase 6.4 — per-request sampling parameters sourced from
-      // chat settings. Undefined values stay off the wire so the sidecar
-      // keeps its defaults when the user hasn't touched the slider.
+      // [START] Phase 6.4 — per-request sampling parameters: profile overrides
+      // take precedence over chat_settings, which in turn take precedence over
+      // the sidecar defaults. Undefined values stay off the wire.
       const cs = useChatSettingsStore.getState();
+      const ps = activeProfile?.sampling;
       const samplingParams: Partial<{
         temperature: number;
         top_p: number;
         repetition_penalty: number;
         max_tokens: number;
       }> = {};
-      if (typeof cs.temperature === "number") samplingParams.temperature = cs.temperature;
-      if (typeof cs.top_p === "number") samplingParams.top_p = cs.top_p;
-      if (typeof cs.repetition_penalty === "number" && cs.repetition_penalty > 1) {
-        samplingParams.repetition_penalty = cs.repetition_penalty;
-      }
-      if (typeof cs.max_tokens === "number" && cs.max_tokens > 0) {
-        samplingParams.max_tokens = cs.max_tokens;
-      }
+      const pickTemp = ps?.temperature ?? cs.temperature;
+      const pickTopP = ps?.top_p ?? cs.top_p;
+      const pickRep = ps?.repetition_penalty ?? cs.repetition_penalty;
+      const pickMax = ps?.max_tokens !== undefined ? ps.max_tokens : cs.max_tokens;
+      if (typeof pickTemp === "number") samplingParams.temperature = pickTemp;
+      if (typeof pickTopP === "number") samplingParams.top_p = pickTopP;
+      if (typeof pickRep === "number" && pickRep > 1) samplingParams.repetition_penalty = pickRep;
+      if (typeof pickMax === "number" && pickMax > 0) samplingParams.max_tokens = pickMax;
       // [END]
 
       for await (const frame of streamChat(

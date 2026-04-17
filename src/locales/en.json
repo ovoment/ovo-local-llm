@@ -102,6 +102,10 @@
       "ask_hint": "💬 Confirm before call — dialog every time",
       "plan_hint": "📋 Plan only — don't run, synthesize a stub result"
     },
+    "profile": {
+      "label": "Model profile",
+      "builtin": "built-in"
+    },
     "drop": {
       "accept": "Drop to attach",
       "accept_hint": "Images and audio files supported",

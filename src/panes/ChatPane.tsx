@@ -8,6 +8,7 @@ import { useSessionsStore } from "../store/sessions";
 import { useChatSettingsStore } from "../store/chat_settings";
 import { ModelSelector } from "../components/ModelSelector";
 import { ChatInput, type ChatInputHandle } from "../components/ChatInput";
+import { ModelProfileSelector } from "../components/ModelProfileSelector";
 import { SystemStatusPopover } from "../components/SystemStatusPopover";
 import { HardDrive } from "lucide-react";
 import { ChatMessageBubble } from "../components/ChatMessageBubble";
@@ -211,10 +212,10 @@ export function ChatPane() {
         </div>
       )}
       {/* [END] */}
-      {/* [START] Header — centered ModelSelector (owl removed, trash relocated) */}
+      {/* [START] Header — centered ModelSelector + right-side profile pill */}
       <header
         data-tauri-drag-region
-        className="flex items-center justify-center gap-3 px-4 py-2 border-b border-ovo-border bg-ovo-surface"
+        className="relative flex items-center justify-center gap-3 px-4 py-2 border-b border-ovo-border bg-ovo-surface"
       >
         <ModelSelector
           models={models}
@@ -222,6 +223,9 @@ export function ChatPane() {
           onChange={(m) => void handleModelChange(m)}
           disabled={!sidecarReady}
         />
+        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <ModelProfileSelector />
+        </div>
       </header>
       {/* [END] */}
 

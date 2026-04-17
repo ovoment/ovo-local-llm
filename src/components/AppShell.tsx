@@ -35,6 +35,9 @@ import { useMcpStore } from "../store/mcp";
 // [START] Phase 6.2c — tool-call approval mode bootstrap
 import { useToolModeStore } from "../store/tool_mode";
 // [END]
+// [START] Phase 6.4 — model profiles bootstrap
+import { useModelProfilesStore } from "../store/model_profiles";
+// [END]
 
 export function AppShell() {
   const [active, setActive] = useState<NavKey>("chat");
@@ -64,6 +67,9 @@ export function AppShell() {
     // [END]
     // [START] Phase 6.2c — tool-call approval mode bootstrap
     useToolModeStore.getState().load();
+    // [END]
+    // [START] Phase 6.4 — model profiles bootstrap
+    useModelProfilesStore.getState().load();
     // [END]
   }, []);
   // [END]
