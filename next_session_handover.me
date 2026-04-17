@@ -1,6 +1,6 @@
 # OVO MLX — Next Session Handover
 
-> 작성: 2026-04-18 KST (세션 #2 종료 — 모든 WIP 커밋 완료, 깨끗한 상태)
+> 작성: 2026-04-18 KST (세션 #3 종료 — 모든 WIP 커밋 완료, 깨끗한 상태)
 
 ---
 
@@ -14,95 +14,103 @@
 
 ---
 
-## ✅ 이번 세션(#2)에서 추가·커밋된 것
+## ✅ 세션 #3 커밋 (최근 → 이전)
 
-HEAD 순서 (최근 → 이전):
-
-1. `feat(pet+sidecar)` — 펫 감정 레이어(press > chat > ambient) + `/ovo/unload` 엔드포인트
-2. `docs(image)` — Phase 7+ 이미지 생성 정책 placeholder 카드
-3. `feat(ui)` — 사이드바 재구성, HDD popover, 드롭존, 사이드카 배너, 오토스타트 폴백, 이미지 메뉴
-4. `feat(mcp)` — Phase 6.2 MCP 프론트 (store/lib/presets/toolUse/Settings/chat 통합) + 전체 i18n 리프레시
-5. `feat(context)` — Phase 6.1b 커스텀 MD 폴더 UI
-6. `feat(tauri)` — Rust 인프라 (read_md_dir, MCP stdio pool, dialog 플러그인)
-
-### 세션 #2 하이라이트
-
-- **드래그 드롭 파일 첨부** — ChatPane 전체가 드롭존. Vision/audio 지원 모델만 받음 (크림톤 accept / 로즈톤 reject 오버레이).
-- **HDD 버튼 정렬 수정** — ChatInput의 `leftSlot` prop으로 + 버튼과 같은 카드·같은 baseline.
-- **사이드카 배너** — health가 stopped/starting/failed일 때 메시지 상단 sticky 배너, 클릭 시 HDD 팝오버 열림.
-- **사이드카 오토스타트 폴백** — AppShell subscribe 후 2초 동안 "stopped"면 `restart()` 자동 호출 (bundle path 누락 / 포트 점유 방어).
-- **사이드바: 이미지 탭 추가** — 📷 아이콘, ImagePane placeholder.
-- **이미지 생성 Phase 7+ 정책 확정** — 아래 섹션 참조.
+1. `feat(wiki)` — 위키 FTS 히트를 chat system prompt에 자동 주입
+2. `feat(wiki)` — Phase 6.3: persistent knowledge library (SQLite FTS5 + WikiPane)
+3. `fix(pet)` — 타이핑 애니메이션 유지 + `<think>` 내부에서 thinking 전환
+4. `fix(mcp)` — npm registry 검색을 Rust 프록시로 우회 (CORS)
+5. `feat(mcp)` — Brave Search 프리셋 + 빈 env 값 prompt
+6. `feat(models)` — vision/audio 감지 확장(~35 VLM 아키텍처) + ModelsPane 배지
+7. `feat(sessions)` — 세션 모델 교체 시 이전 MLX 러너 즉시 언로드
+8. `docs(handover)` — 세션 #2 종료 핸드오버 (이 파일의 이전 버전)
+9. `fix(tauri)` — 메인 윈도우 `dragDropEnabled: false`로 webview 드롭 복원
+10. `feat(pet+sidecar)` — 펫 레이어드 감정 상태 + `/ovo/unload` 엔드포인트
+11. `docs(image)` — Phase 7+ 이미지 생성 정책 placeholder 카드
+12. `feat(ui)` — 사이드바 재구성, HDD popover, 드롭존, 사이드카 배너, 오토스타트 폴백
+13. `feat(mcp)` — Phase 6.2 MCP 프론트 (store/lib/presets/toolUse/Settings/chat 통합)
+14. `feat(context)` — Phase 6.1b 커스텀 MD 폴더 UI
+15. `feat(tauri)` — Rust 인프라 (read_md_dir, MCP stdio pool, dialog 플러그인)
 
 ---
 
-## 📸 Phase 7+ 이미지 생성 요구사항 (오빠 확정)
+## 🏁 현재 기능 요약 (세션 #3 이후)
 
-현재는 `ImagePane` 플레이스홀더에 정책 카드만 있음. 실제 구현 남음.
+### 주요 완료
+
+- **Phase 6.1** — 프로젝트 컨텍스트 로더(CLAUDE.md / AGENTS.md / GEMINI.md) + 커스텀 MD 폴더
+- **Phase 6.2** — MCP (stdio JSON-RPC 2.0 풀, 프리셋 5개: filesystem / memory / sequential-thinking / context7 / **brave-search**, npm 검색 설치, tool_use 탐지 + 재귀 실행 ≤5, bypass/ask/plan 모드)
+- **Phase 6.3** — 위키 (SQLite + FTS5, CRUD UI, 채팅 자동 주입 4000자 예산)
+- **사이드카 생명주기** — 자동 시작, 2초 idle → restart 폴백, `/ovo/unload` 호출 연계
+- **펫** — 레이어드 감정(press > chat > ambient), thinking/typing 상시 유지, reasoning 블록 전환 감지
+- **UI** — 드롭존(vision/audio 모델만 수용), 사이드카 배너, 모델 카드 capability 배지, 신호등 회피 로고
+- **이미지 생성** — 정책만 확정 (실제 구현은 Phase 7+)
+
+### 사이드바 레이아웃
+
+```
+상단 레일    : [💬 채팅] [</> 코드] [📷 이미지]
+하단 도크    : [📦 모델] [📚 위키] [⚙️ 설정] [ⓘ 정보]
+```
+
+---
+
+## 📸 Phase 7+ 이미지 생성 요구사항 (오빠 확정, 유지)
 
 ### 정책 (ImagePane 카드에 i18n으로 노출)
 
-1. **Scope** — 이미지 탭의 모델 셀렉터는 **이미지 생성 모델만** 표시 (LLM과 분리)
-2. **Unload** — 이미지 모델 로드 시 **활성 채팅/코드 LLM 언로드** (통합 메모리 확보). 이미 붙어있는 `/ovo/unload` 엔드포인트 재사용.
-3. **Download** — **Draw Things 수준의 HF 카탈로그** 커버리지 목표 (SD 1.5 / SDXL / Flux / ControlNet / LoRA). 기존 ModelsPane 다운로드 플로우 확장.
-4. **Settings** — model · LoRA · control · strength · seed · size · steps · CFG · sampler · shift · batch · prompt/negative.
+1. **Scope** — 이미지 탭의 모델 셀렉터는 **이미지 생성 모델만** 표시
+2. **Unload** — 이미지 모델 로드 시 **활성 채팅/코드 LLM 언로드** (`unloadLoadedModels` 이미 연결됨, 재사용 가능)
+3. **Download** — Draw Things 수준의 HF 카탈로그 (SD 1.5 / SDXL / Flux / ControlNet / LoRA)
+4. **Settings** — model · LoRA · control · strength · seed · size · steps · CFG · sampler · shift · batch · prompt/negative
 
 ### 구현 단계 (초안)
 
-1. Sidecar 쪽:
-   - 새 runner `sidecar/src/ovo_sidecar/mlx_diffusion_runner.py` (Z-Image / SDXL / Flux)
-   - `/ovo/images/generate` 엔드포인트 (스트리밍 step progress SSE)
-   - `/v1/images/generations` OpenAI 호환 엔드포인트
-   - HF 검색 확장: `tags` 필터에 `text-to-image`, `image-to-image`, `controlnet`, `lora` 추가
-2. 모델 메타:
-   - `ModelCapability` 에 `"image_gen"` 추가
-   - `isImageGenModel()` helper (`src/lib/models.ts`)
-   - ModelsPane 카드에 🎨 배지
-3. UI:
-   - ImagePane 실제 구현 (프롬프트 바 + 우측 설정 패널, 레퍼런스: Draw Things)
-   - ChatPane ModelSelector에서 `image_gen` 모델 제외
-   - ImagePane ModelSelector는 `image_gen`만
-4. Unload 연계: ImagePane에서 모델 전환 시 `unloadLoadedModels()` 호출 → 모든 LLM 플러시
+1. **Sidecar**: 새 러너 `mlx_diffusion_runner.py`, `/ovo/images/generate` SSE, `/v1/images/generations` OpenAI 호환
+2. **모델 메타**: `ModelCapability`에 `"image_gen"` 추가, `isImageGenModel()` helper, HF 검색 `text-to-image` 필터
+3. **UI**: ImagePane 실제 구현(프롬프트 바 + 우측 설정 패널), Chat/Code selector에서 image_gen 모델 제외
+4. **Unload 연계**: ImagePane 모델 전환 → 기존 `unloadLoadedModels()` 재사용
 
 ---
 
 ## 🔜 다음 세션 할 일 (우선순위 순)
 
-### 1순위 — Unload 프론트 호출 연결 (2순위에서 승계)
+### 1순위 — Phase 6.4 Claude 페어리티
 
-**사이드카 `/ovo/unload` 엔드포인트는 이미 세션 #2에서 커밋 완료**. 프론트 호출만 남음.
+- **`/compact` 수동 트리거 UI** — auto-compact 엔진 재사용, 채팅 상단 슬래시 커맨드 바
+- **`.ovo/skills/`** — Claude `.claude/skills/` 대응, 폴더 스캔 → 시스템 프롬프트 카탈로그 주입
+- **`/memory` 명령** — Claude Code 대응 (`/memory add/list/remove`)
+- **Plan 모드 정교화** — 시스템 프롬프트에 "plan only, no execution" 명시
+- **MCP memory 브릿지** — `@modelcontextprotocol/server-memory`를 OVO Wiki FTS 백엔드로 연결
+- **MCP env 인라인 에디터** — 현재 `window.prompt()` → Settings 섹션에 폼 UI
+- **Reasoning 모델 플래그** — 모델 메타에 `"reasoning"` capability 추가, R1 implicit-open 시 초기 owlState 유지
 
-할 일:
-1. `src/lib/api.ts` 에 추가:
-   ```ts
-   export async function unloadLoadedModels(ports: SidecarPorts = DEFAULT_PORTS): Promise<{ freed: string[] }> {
-     const resp = await fetch(`${nativeBase(ports)}/ovo/unload`, { method: "POST" });
-     return jsonOrThrow<{ freed: string[] }>(resp);
-   }
-   ```
-2. `src/store/sessions.ts::setSessionModel` 에서 이전 모델과 다른 모델로 교체될 때 `unloadLoadedModels()` fire-and-forget.
-3. Phase 7+ 대비: 모델 카테고리(chat/image) 전환 시도 강제 언로드 — 공통 경로로 통합.
+### 2순위 — Phase 7+ 이미지 생성 MVP
 
-### 2순위 — Phase 6.3 Wiki / 영속 메모리
+위 섹션 "구현 단계" 참조.
 
-- SQLite 새 테이블: `wiki_pages (id, title, slug, content, tags_json, category, updated_at)` + FTS5
-- Frontend: `src/store/wiki.ts` CRUD + query
-- Retrieval: 세션 시작/매 턴 키워드 매칭 상위 N페이지 → system prompt 주입 (토큰 예산 관리)
-- **MCP memory 서버와 연계**: 6.2에서 프리셋 이미 붙음 → OVO Wiki를 memory 서버 백엔드로 쓸 수 있게 브릿지
+### 3순위 — 작은 개선
 
-### 3순위 — Phase 7+ 이미지 생성 MVP (위 섹션 구현)
+- MCP 서버 첫 실행 `npx -y` 다운로드 진행 UI
+- `<tool_use>` ask 모드 — `window.confirm()` → 인라인 카드 (승인/거부/항상 허용)
+- Wiki: 태그 필터 UI, 카테고리 그룹, 마크다운 프리뷰 모드
 
-### 4순위 — Phase 6.4 Claude 페어리티 추가
+### 최종 단계(Phase 8+) — Code 탭 IDE 완성 (오빠 확정)
 
-- `/compact` 슬래시 커맨드 UI (auto-compact 엔진 재사용, 수동 트리거만)
-- `.claude/skills/` 계층 → OVO `.ovo/skills/`
-- `/memory` 명령 (Claude Code 대응)
-- Plan 모드 정교화: 시스템 프롬프트에 "plan only, no execution" 명시
+Claude Code와 대등한 **로컬 IDE**로 CodePane 완성. 6.4 skills / memory /
+compact 기반 위에 실제 편집 경험 얹기.
 
-### 5순위 — 작은 개선
+필요 구성(초안):
 
-- MCP 서버 첫 실행 지연 (npx 다운로드 5~30초) → UI "📦 다운로드 중..." 상태
-- `<tool_use>` 승인 ask 모드 — `window.confirm()` → 채팅 스트림 인라인 카드 (승인/거부/항상 허용)
+1. **에디터 레이어** — Monaco / CodeMirror 중 택1, Tauri 네이티브 통합
+2. **파일 트리 + 탭** — `src/store/editor.ts`, project_context의 루트 경로 공유
+3. **터미널** — Tauri shell plugin 또는 xterm.js + PTY 래퍼
+4. **LSP** — `tauri-plugin-lsp` 혹은 직접 JSON-RPC 풀(MCP 풀 로직 재사용 가능)
+5. **Git 사이드바** — 변경/스테이지/커밋 UI, `git2` 크레이트 또는 shell
+6. **AI 코딩 어시스트** — 현재 선택된 범위 → 채팅 탭으로 전달하는 "OVO에게 물어보기" 액션
+7. **`.ovo/skills/`, `/compact`, `/memory`** — 6.4 산출물 전부 IDE 안에서도 동일 동작
+
+이게 완성되어야 북스타 "**모든 모델을 쓸 수 있는 로컬 Claude**"가 실질적으로 닫힘.
 
 ---
 
@@ -121,11 +129,13 @@ npx tsc --noEmit
 CARGO_TARGET_DIR=/tmp/ovomlx-target CARGO_INCREMENTAL=0 \
   $HOME/.cargo/bin/cargo check --manifest-path src-tauri/Cargo.toml
 
-# i18n 파리티
+# i18n 파리티 (세션 #3 종료 시점 233 keys)
 node -e "const ko=require('./src/locales/ko.json'),en=require('./src/locales/en.json');const f=(o,p='')=>Object.entries(o).flatMap(([k,v])=>v&&typeof v==='object'&&!Array.isArray(v)?f(v,p+k+'.'):[p+k]);const K=new Set(f(ko)),E=new Set(f(en));console.log('ko:',K.size,'| en:',E.size);const ok=[...K].filter(x=>!E.has(x)),oe=[...E].filter(x=>!K.has(x));if(ok.length||oe.length){console.log({ok,oe});}else console.log('OK');"
 ```
 
-세션 #2 종료 시점 모두 통과 (tsc ✓ / cargo check ✓ / i18n 218 keys parity ✓).
+세션 #3 종료 시점 모두 통과 (tsc ✓ / cargo check ✓ / i18n 233 keys parity ✓).
+
+⚠️ **주의**: SQLite 마이그레이션 v2(wiki_pages + FTS5)가 추가됐어. 기존 DB는 앱 시작 시 자동 업그레이드. `$APPDATA/com.ovoment.ovo/chats.sqlite`.
 
 ---
 
@@ -137,7 +147,7 @@ node -e "const ko=require('./src/locales/ko.json'),en=require('./src/locales/en.
 │  ├─ 로고 (pt-16으로 신호등 회피)                   │
 │  ├─ [💬 채팅] [</> 코드] [📷 이미지]               │
 │  ├─ RecentsPanel (채팅 탭 활성 시)                 │
-│  └─ 하단 도크 [📦 모델][⚙️ 설정][ⓘ 정보]          │
+│  └─ 하단 도크 [📦 모델][📚 위키][⚙️ 설정][ⓘ 정보]  │
 │                                                   │
 │  ChatPane (drop zone for vision/audio files)      │
 │  ├─ Header: ModelSelector (중앙정렬)               │
@@ -146,14 +156,20 @@ node -e "const ko=require('./src/locales/ko.json'),en=require('./src/locales/en.
 │  │            summary 세그먼트)                   │
 │  ├─ Drag overlay (accept 크림 / reject 로즈)       │
 │  └─ Bottom row: [HDD | + | textarea | send]       │
-│                  └─ 팝오버: Sidecar+Context+trash │
+│                                                   │
+│  WikiPane (Phase 6.3)                             │
+│  ├─ 좌: 검색 + 페이지 리스트 (pin/delete)          │
+│  ├─ 우: 제목 + 마크다운 에디터 (600ms 자동 저장)   │
+│  └─ FTS5 검색 → 채팅 시 자동 주입(상위 3, 4000자)  │
 │                                                   │
 │  ImagePane (Phase 7+ placeholder)                 │
-│  └─ Policy card: scope/unload/download/settings   │
+│  └─ 정책 카드: scope/unload/download/settings     │
 └───────────────────────────────────────────────────┘
 
 ┌────────── Tauri Pet Window (투명) ────────────────┐
 │  PetApp (press > chat > ambient layered state)    │
+│  thinking/typing 상시 유지                         │
+│  <think> 블록 감지 → thinking 전환 (500자 tail)    │
 │  우클릭 컨텍스트 메뉴 (크기 4단계 + 숨기기)       │
 └───────────────────────────────────────────────────┘
 
@@ -162,17 +178,25 @@ node -e "const ko=require('./src/locales/ko.json'),en=require('./src/locales/en.
 │  MLX runners: text + vlm (+ diffusion Phase 7+)   │
 │  /ovo/{models, search, download, count_tokens,    │
 │        summarize, unload}                         │
-│  + autostart fallback: FE kicks restart() if      │
+│  모델 교체 시 세션 스토어가 unload 자동 호출       │
+│  autostart fallback: FE kicks restart() if        │
 │    status stays 'stopped' 2s after hydrate        │
+│  capability detection: 35 VLM types + tail heur   │
 └───────────────────────────────────────────────────┘
 
 ┌────────── MCP (Tauri Rust 풀) ────────────────────┐
 │  stdio JSON-RPC 2.0                               │
 │  프리셋: filesystem / memory / seq-thinking /     │
-│           context7 (+ npm 검색 설치)              │
+│           context7 / brave-search                 │
+│  npm 검색 설치: registry.npmjs.org 프록시(Rust)   │
 │  채팅 통합: <tool_use> 감지 → mcpCall →           │
 │             <tool_result> 재주입 (루프 ≤ 5)       │
 │  승인 모드: bypass(기본) / ask / plan             │
+└───────────────────────────────────────────────────┘
+
+┌────────── SQLite (chats.sqlite v2) ───────────────┐
+│  v1: sessions + messages + model_context_overrides│
+│  v2: wiki_pages + wiki_fts (FTS5 + triggers)      │
 └───────────────────────────────────────────────────┘
 ```
 
@@ -184,8 +208,10 @@ node -e "const ko=require('./src/locales/ko.json'),en=require('./src/locales/en.
 2. **사이드카 재시작**: `src-tauri/src/sidecar.rs::kill_port()` 가 포트 점유 좀비 자동 정리. 수동: `lsof -ti:11435,11436,11437 | xargs kill -9`.
 3. **MCP 첫 실행 지연**: `npx -y` 자동 다운로드 5~30초. UI 진행 표시 개선 여지.
 4. **SMB 볼륨 (/Volumes/docker)**: cargo 빌드 시 `CARGO_TARGET_DIR=/tmp/ovomlx-target` 필수. uv 패키지 설치 시 `UV_LINK_MODE=copy`.
-5. **Plan 모드**: 가짜 tool_result 주입 방식 — 모델이 혼란스러울 수 있음. 6.4에서 system prompt에도 "plan only" 명시 추가 고려.
-6. **Git 식별자**: 레포 로컬 설정 (`user.email=ovo@ovoment.com`, `user.name=ben`). 전역 안 건드림.
+5. **R1-style implicit-open reasoning**: 현재 Typing 상태로 시작 (markers 없어 감지 불가). Phase 6.4에서 `reasoning` capability 추가로 해결.
+6. **MCP env 편집**: 프리셋 추가 시 빈 env 값은 prompt()로 받지만, 이후 수정하려면 remove+re-add. Phase 6.4에서 인라인 에디터로 교체.
+7. **Brave Search 프리셋**: BRAVE_API_KEY 필요 (무료 tier 있음, https://brave.com/search/api/).
+8. **Git 식별자**: 레포 로컬 설정 (`user.email=ovo@ovoment.com`, `user.name=ben`).
 
 ---
 
@@ -200,19 +226,20 @@ node -e "const ko=require('./src/locales/ko.json'),en=require('./src/locales/en.
 | 채팅 버블 (세그먼트 파싱) | `src/components/ChatMessageBubble.tsx` |
 | 모델 대시보드 | `src/panes/ModelsPane.tsx`, `src/store/model_perf.ts` |
 | 이미지 (placeholder) | `src/panes/ImagePane.tsx` |
+| **위키** | `src/panes/WikiPane.tsx`, `src/store/wiki.ts`, `src/db/wiki.ts`, `src-tauri/migrations/002_wiki.sql` |
 | 설정 | `src/panes/SettingsPane.tsx` |
 | 컨텍스트 로더 | `src/store/project_context.ts`, `src/components/ProjectContextSection.tsx` |
-| MCP 백엔드 | `src-tauri/src/mcp.rs` |
-| MCP 프론트 | `src/store/mcp.ts`, `src/lib/mcp.ts`, `src/components/McpServersSection.tsx` |
+| MCP 백엔드 | `src-tauri/src/mcp.rs`, `src-tauri/src/lib.rs::npm_search` |
+| MCP 프론트 | `src/store/mcp.ts`, `src/lib/mcp.ts`, `src/lib/mcp_presets.ts`, `src/components/McpServersSection.tsx` |
 | Tool mode | `src/store/tool_mode.ts`, `src/lib/toolUse.ts` |
-| 펫 | `src/pet/PetApp.tsx` |
-| 사이드카 | `sidecar/src/ovo_sidecar/api/{openai,ovo}.py`, `mlx_runner.py`, `mlx_vlm_runner.py` |
+| 펫 | `src/pet/PetApp.tsx` (+ `src/store/chat.ts::detectThinkTransition`) |
+| 사이드카 | `sidecar/src/ovo_sidecar/{api/openai,api/ovo,hf_scanner,mlx_runner,mlx_vlm_runner}.py` |
 
 ---
 
 ## 💬 첫 메시지 권장 템플릿 (다음 세션)
 
-> "next_session_handover.me 읽고 1순위 unload 프론트 호출부터 연결해줘. 그 다음 Phase 6.3 Wiki, 그리고 시간 되면 Phase 7+ 이미지 생성 MVP 시작."
+> "next_session_handover.me 읽고 Phase 6.4부터 들어가자. /compact UI, .ovo/skills/, /memory 명령, MCP memory 브릿지 순서로. 그 다음 Phase 7+ 이미지 MVP."
 
 ---
 
