@@ -19,7 +19,8 @@
         "minWidth": 800,
         "minHeight": 600,
         "titleBarStyle": "Overlay",
-        "hiddenTitle": true
+        "hiddenTitle": true,
+        "dragDropEnabled": false
       },
       {
         "label": "pet",
