@@ -9,14 +9,89 @@ interface Props {
   streaming?: boolean;
 }
 
-// [START] <think>...</think> parser — splits assistant content into text/think segments.
-// An unterminated <think> (no </think> yet) is marked `open: true` so it can show a streaming state.
+// [START] Multi-format reasoning parser.
+// Normalizes several reasoning markup dialects into canonical <think>/</think>
+// before segmentation: Harmony channels (analysis/thought/commentary/final),
+// ChatML think turns, alt HTML-ish tags (<thinking>, <reasoning>, ...), bracket
+// variants ([THOUGHT]..[/THOUGHT]). Then strips any loose harmony/ChatML meta
+// tokens that leaked into plain text (the original bug: raw `<|channel|>`, etc.
+// visible in the bubble for gpt-oss / harmony-formatted models).
 type Segment =
   | { type: "text"; content: string }
   | { type: "think"; content: string; open: boolean };
 
 const OPEN_TAG = "<think>";
 const CLOSE_TAG = "</think>";
+
+function normalizeReasoning(input: string): string {
+  let s = input;
+
+  // Complete Harmony reasoning channels → <think>..</think>
+  s = s.replace(
+    /<\|channel\|>(?:analysis|thought|commentary)(?:<\|constrain\|>[^<]*)?<\|message\|>([\s\S]*?)(?:<\|end\|>|<\|return\|>)/g,
+    (_m, body: string) => `${OPEN_TAG}${body}${CLOSE_TAG}`,
+  );
+  // Complete Harmony final/response channel → strip wrapper, keep body as text
+  s = s.replace(
+    /<\|channel\|>(?:final|response)(?:<\|constrain\|>[^<]*)?<\|message\|>([\s\S]*?)(?:<\|end\|>|<\|return\|>)/g,
+    (_m, body: string) => body,
+  );
+  // Streaming Harmony reasoning open-only (no terminator yet)
+  s = s.replace(
+    /<\|channel\|>(?:analysis|thought|commentary)(?:<\|constrain\|>[^<]*)?<\|message\|>/g,
+    OPEN_TAG,
+  );
+  // Streaming Harmony final open-only → drop wrapper
+  s = s.replace(
+    /<\|channel\|>(?:final|response)(?:<\|constrain\|>[^<]*)?<\|message\|>/g,
+    "",
+  );
+
+  // ChatML think turn → <think>..</think>
+  s = s.replace(
+    /<\|im_start\|>(?:think|reasoning|analysis|assistant_thought)\s*\n?([\s\S]*?)<\|im_end\|>/g,
+    (_m, body: string) => `${OPEN_TAG}${body}${CLOSE_TAG}`,
+  );
+  s = s.replace(
+    /<\|im_start\|>(?:think|reasoning|analysis|assistant_thought)\s*\n?/g,
+    OPEN_TAG,
+  );
+
+  // Alt HTML-ish tag pairs → <think>..</think>
+  const altPairs: Array<[string, string]> = [
+    ["thinking", "thinking"],
+    ["reasoning", "reasoning"],
+    ["reflection", "reflection"],
+    ["scratchpad", "scratchpad"],
+  ];
+  for (const [open, close] of altPairs) {
+    s = s.replace(
+      new RegExp(`<${open}>([\\s\\S]*?)</${close}>`, "g"),
+      (_m, body: string) => `${OPEN_TAG}${body}${CLOSE_TAG}`,
+    );
+    s = s.replace(new RegExp(`<${open}>`, "g"), OPEN_TAG);
+  }
+
+  // Bracket reasoning variants
+  const brackets = ["THOUGHT", "THINK", "REASONING"];
+  for (const name of brackets) {
+    s = s.replace(
+      new RegExp(`\\[${name}\\]([\\s\\S]*?)\\[/${name}\\]`, "g"),
+      (_m, body: string) => `${OPEN_TAG}${body}${CLOSE_TAG}`,
+    );
+    s = s.replace(new RegExp(`\\[${name}\\]`, "g"), OPEN_TAG);
+    s = s.replace(new RegExp(`\\[/${name}\\]`, "g"), CLOSE_TAG);
+  }
+
+  // Loose Harmony/ChatML meta tokens that slipped through — strip so they don't
+  // render as plaintext garbage in the bubble.
+  s = s.replace(
+    /<\|(?:start|end|return|message|channel|constrain|\/constrain|im_start|im_end)\|>/g,
+    "",
+  );
+
+  return s;
+}
 
 function skipLeadingWs(s: string, from: number): number {
   let j = from;
@@ -28,13 +103,13 @@ function skipLeadingWs(s: string, from: number): number {
   return j;
 }
 
-function parseSegments(content: string): Segment[] {
+function parseSegments(raw: string): Segment[] {
+  const content = normalizeReasoning(raw);
   const out: Segment[] = [];
   let i = 0;
 
-  // Implicit-open: some reasoning models (R1-style) emit `</think>` without a
-  // preceding `<think>` because the prompt template already injected the open tag.
-  // Treat the prefix before the first unmatched `</think>` as a closed think block.
+  // Implicit-open: R1-style templates inject <think> on the server side, so the
+  // stream can begin with reasoning content that terminates at </think>.
   const firstOpen = content.indexOf(OPEN_TAG);
   const firstClose = content.indexOf(CLOSE_TAG);
   if (firstClose !== -1 && (firstOpen === -1 || firstClose < firstOpen)) {
