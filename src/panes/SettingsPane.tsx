@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Copy } from "lucide-react";
+import { CollapsibleSection } from "../components/CollapsibleSection";
 import { LanguageToggle } from "../components/LanguageToggle";
 import { useThemeStore, type ThemeMode } from "../store/theme";
 import { useSidecarStore } from "../store/sidecar";
@@ -604,11 +605,8 @@ export function SettingsPane() {
 
       <AdvancedSection ports={ports} models={models} />
 
-      {/* [START] Chat input section — streaming send mode */}
-      <section className="py-4 border-b border-ovo-border">
-        <h3 className="text-sm font-semibold text-ovo-text mb-4">
-          {t("settings.chat_input.section_title")}
-        </h3>
+      {/* [START] Chat input section — streaming send mode + reply sound */}
+      <CollapsibleSection id="chat_input" title={t("settings.chat_input.section_title")}>
         <div className="flex flex-col gap-3">
           {STREAMING_SEND_MODES.map((m) => (
             <label key={m} className="flex flex-col gap-0.5 cursor-pointer">
@@ -627,7 +625,6 @@ export function SettingsPane() {
             </label>
           ))}
         </div>
-        {/* [START] Reply-complete sound toggle */}
         <label className="mt-4 flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -638,16 +635,14 @@ export function SettingsPane() {
           <span className="text-sm text-ovo-text">{t("settings.chat_input.sound_label")}</span>
         </label>
         <p className="ml-6 text-xs text-ovo-muted">{t("settings.chat_input.sound_help")}</p>
-        {/* [END] */}
-      </section>
+      </CollapsibleSection>
       {/* [END] */}
 
       {/* [START] Phase 6.4 — Sampling parameters section */}
-      <section className="py-4 border-b border-ovo-border">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-ovo-text">
-            {t("settings.sampling.section_title")}
-          </h3>
+      <CollapsibleSection
+        id="sampling"
+        title={t("settings.sampling.section_title")}
+        right={
           <button
             type="button"
             onClick={() => resetSampling()}
@@ -655,7 +650,8 @@ export function SettingsPane() {
           >
             {t("settings.sampling.reset")}
           </button>
-        </div>
+        }
+      >
         <p className="text-xs text-ovo-muted mb-4">
           {t("settings.sampling.description")}
         </p>
@@ -768,7 +764,7 @@ export function SettingsPane() {
             </p>
           </div>
         </div>
-      </section>
+      </CollapsibleSection>
       {/* [END] */}
 
       {/* [START] Phase 6.1 — Project Context section */}
@@ -784,11 +780,7 @@ export function SettingsPane() {
       {/* [END] */}
 
       {/* [START] Context management section (R.6) */}
-      <section className="py-4 border-b border-ovo-border">
-        <h3 className="text-sm font-semibold text-ovo-text mb-4">
-          {t("settings.context.section_title")}
-        </h3>
-
+      <CollapsibleSection id="context" title={t("settings.context.section_title")}>
         {/* Compact strategy radio */}
         <div className="mb-5">
           <div className="text-xs font-medium text-ovo-muted mb-2">
@@ -975,14 +967,11 @@ export function SettingsPane() {
             </button>
           )}
         </div>
-      </section>
+      </CollapsibleSection>
       {/* [END] */}
 
       {/* [START] Phase 7 — Desktop Pet toggle */}
-      <section className="py-4 border-b border-ovo-border">
-        <h3 className="text-sm font-semibold text-ovo-text mb-4">
-          {t("settings.pet.section_title")}
-        </h3>
+      <CollapsibleSection id="pet" title={t("settings.pet.section_title")}>
         <label className="flex flex-col gap-0.5 cursor-pointer">
           <div className="flex items-center gap-2">
             <input
@@ -995,7 +984,7 @@ export function SettingsPane() {
           </div>
           <p className="ml-6 text-xs text-ovo-muted">{t("settings.pet.enable_help")}</p>
         </label>
-      </section>
+      </CollapsibleSection>
       {/* [END] */}
       </div>
     </div>
