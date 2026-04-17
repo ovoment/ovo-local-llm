@@ -203,7 +203,9 @@
   font-family: Inter, -apple-system, system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light dark;
+  /* [START] force light UA styling — app is light-only; prevents body going black on React unmount in macOS dark mode */
+  color-scheme: light;
+  /* [END] */
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -212,8 +214,10 @@ html,
 body,
 #root {
   height: 100%;
+  background: #FAF3E7;
 }
 
 body {
   margin: 0;
+  color: #2C1810;
 }

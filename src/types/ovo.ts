@@ -1,5 +1,16 @@
 export type ModelSource = "hf" | "lmstudio";
 
+/**
+ * MLX quantization config as it appears in HuggingFace config.json.
+ * The sidecar forwards it verbatim — may be a structured object OR a legacy
+ * string ("q4", "q8_0"), so consumers must handle both shapes.
+ */
+export interface QuantizationConfig {
+  group_size?: number;
+  bits?: number;
+  mode?: string;
+}
+
 export interface OvoModel {
   repo_id: string;
   revision: string;
@@ -7,8 +18,8 @@ export interface OvoModel {
   size_bytes: number;
   is_mlx: boolean;
   model_type?: string | null;
-  architecture?: string | null;
-  quantization?: string | null;
+  architecture?: string | string[] | null;
+  quantization?: QuantizationConfig | string | null;
   hidden_size?: number | null;
   source: ModelSource;
 }
