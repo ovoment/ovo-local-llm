@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { MessageSquare, Package, Settings, Info } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
+import { RecentsPanel } from "./RecentsPanel";
 
 export type NavKey = "chat" | "models" | "settings" | "about";
 
@@ -30,7 +31,7 @@ export function Sidebar({ active, onSelect }: SidebarProps) {
         <div className="font-semibold text-[#2C1810] tracking-tight">{t("app.name")}</div>
         <div className="text-[11px] text-[#8B4432] mt-0.5">{t("app.tagline")}</div>
       </div>
-      <ul className="flex-1 py-2">
+      <ul className="py-2">
         {NAV_ITEMS.map(({ key, icon: Icon }) => {
           const isActive = key === active;
           return (
@@ -50,6 +51,11 @@ export function Sidebar({ active, onSelect }: SidebarProps) {
           );
         })}
       </ul>
+      {/* [START] Recents panel — only visible when chat tab is active */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {active === "chat" && <RecentsPanel />}
+      </div>
+      {/* [END] */}
     </nav>
   );
 }
