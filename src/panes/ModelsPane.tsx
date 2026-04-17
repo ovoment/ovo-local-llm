@@ -509,7 +509,22 @@ export function ModelsPane() {
               className="p-3 rounded-lg bg-ovo-surface border border-ovo-border flex items-center gap-4 cursor-pointer hover:bg-ovo-surface-solid transition"
             >
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-ovo-text truncate">{m.repo_id}</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="text-sm font-medium text-ovo-text truncate">{m.repo_id}</div>
+                  {/* [START] capability badges — makes vision/audio models
+                      visually distinct from text-only LLMs at a glance */}
+                  {m.capabilities?.includes("vision") && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-sky-500/15 text-sky-400 border border-sky-500/30 shrink-0">
+                      👁 {t("models.capability.vision")}
+                    </span>
+                  )}
+                  {m.capabilities?.includes("audio") && (
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-fuchsia-500/15 text-fuchsia-400 border border-fuchsia-500/30 shrink-0">
+                      🎧 {t("models.capability.audio")}
+                    </span>
+                  )}
+                  {/* [END] */}
+                </div>
                 <div className="text-[11px] text-ovo-muted mt-0.5 flex gap-3 flex-wrap">
                   <span>{t(`models.source.${m.source}`)}</span>
                   {formatArchitecture(m.architecture) && (

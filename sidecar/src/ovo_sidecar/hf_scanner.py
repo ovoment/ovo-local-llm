@@ -63,41 +63,76 @@ def detect_max_context(config: dict) -> int | None:
 # architectures. Each modality is independent so a single model can claim
 # multiple (e.g. Phi-4-multimodal has vision + audio).
 _VISION_MODEL_TYPES: frozenset[str] = frozenset({
-    "qwen2_vl", "qwen2_5_vl", "qwen3_vl",
+    # Qwen line
+    "qwen2_vl", "qwen2_5_vl", "qwen3_vl", "qwen2_5_omni",
+    # LLaVA line
     "llava", "llava_next", "llava_onevision", "llava_next_video",
-    "minicpmv",
-    "idefics2", "idefics3",
-    "mllama",
-    "internvl_chat",
-    "paligemma",
-    "phi3_v",
-    "phi4_multimodal",
-    "gemma3",
-    "mistral3",
+    "video_llava",
+    # MiniCPM / CPM
+    "minicpmv", "minicpm_v",
+    # Idefics / Mistral vision
+    "idefics2", "idefics3", "mllama", "mistral3", "pixtral",
+    # InternVL / InternLM
+    "internvl_chat", "internlm_xcomposer2", "internlm_xcomposer2_5",
+    # Google
+    "paligemma", "gemma3",
+    # Microsoft
+    "phi3_v", "phi4_multimodal",
+    # HuggingFace SmolVLM
     "smolvlm",
-    "pixtral",
+    # DeepSeek
+    "deepseek_vl", "deepseek_vl2", "deepseek_vl_v2", "janus", "janus_pro",
+    # Misc
+    "moondream1", "moondream2", "molmo", "aria",
+    "cogvlm", "cogvlm2", "chameleon", "bunny", "ovis",
+    "got_ocr2", "got_ocr_2",
+    "h2ovl_mississippi", "nvlm", "ernie_vl",
+    "glm4v", "glmv",
 })
 
 _AUDIO_MODEL_TYPES: frozenset[str] = frozenset({
     "phi4_multimodal",
     "qwen2_audio",
     "qwen2_5_omni",
+    "whisper",
+    "parakeet",
 })
 
 
 def detect_capabilities(config: dict) -> tuple[str, ...]:
+    """
+    Decide which modalities a model supports from its HF config.json.
+
+    Primary signal: `model_type` (Transformers' registry). Secondary signals:
+    presence of common vision/audio sub-config keys. Third-tier fallback:
+    any config key containing "vision" / "audio" as a substring — this
+    catches future architectures that haven't made it into the allow-list
+    yet but whose configs still mention the modality.
+    """
     model_type = str(config.get("model_type") or "").lower()
     caps: list[str] = ["text"]
+
+    config_keys_lc = [str(k).lower() for k in config.keys()]
 
     has_vision = (
         model_type in _VISION_MODEL_TYPES
         or "vision_config" in config
         or "vision_tower" in config
+        or "mm_vision_config" in config
+        or "image_processor" in config
+        or any(
+            "vision" in k or "visual" in k or "image_encoder" in k
+            for k in config_keys_lc
+        )
     )
     has_audio = (
         model_type in _AUDIO_MODEL_TYPES
         or "audio_config" in config
         or "audio_processor_config" in config
+        or any(
+            "audio" in k or "speech" in k
+            for k in config_keys_lc
+        )
     )
 
     if has_vision:
