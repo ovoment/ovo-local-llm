@@ -9,7 +9,6 @@ interface Props {
   onStop: () => void;
   streaming: boolean;
   disabled?: boolean;
-  supportsVision?: boolean;
 }
 
 function readImagePreview(file: File): Promise<string | null> {
@@ -27,7 +26,7 @@ function genId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function ChatInput({ onSend, onStop, streaming, disabled, supportsVision = false }: Props) {
+export function ChatInput({ onSend, onStop, streaming, disabled }: Props) {
   const { t } = useTranslation();
   const [value, setValue] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -55,17 +54,6 @@ export function ChatInput({ onSend, onStop, streaming, disabled, supportsVision 
   useEffect(() => {
     if (urlMode) urlInputRef.current?.focus();
   }, [urlMode]);
-
-  // [START] Switching to a text-only model must drop any staged attachments and
-  // close the attach menu — otherwise stale chips linger and confuse the user.
-  useEffect(() => {
-    if (supportsVision) return;
-    setAttachments([]);
-    setMenuOpen(false);
-    setUrlMode(false);
-    setUrlValue("");
-  }, [supportsVision]);
-  // [END]
 
   const canSubmit = (value.trim().length > 0 || attachments.length > 0) && !streaming && !disabled;
 
@@ -140,14 +128,14 @@ export function ChatInput({ onSend, onStop, streaming, disabled, supportsVision 
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
-            disabled={disabled || !supportsVision}
-            aria-label={supportsVision ? t("chat.attach") : t("chat.attach_unsupported")}
-            title={supportsVision ? t("chat.attach") : t("chat.attach_unsupported")}
+            disabled={disabled}
+            aria-label={t("chat.attach")}
+            title={t("chat.attach")}
             className="h-[40px] w-[40px] rounded-lg bg-white border border-[#E8CFBB] text-[#8B4432] hover:bg-[#FAF3E7] hover:text-[#2C1810] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition"
           >
             <Plus className="w-4 h-4" aria-hidden />
           </button>
-          {menuOpen && supportsVision && (
+          {menuOpen && (
             <div className="absolute z-20 bottom-full mb-1 left-0 min-w-[220px] rounded-lg bg-white border border-[#E8CFBB] shadow-lg py-1">
               <button
                 type="button"

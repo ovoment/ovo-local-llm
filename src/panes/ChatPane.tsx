@@ -70,10 +70,6 @@ export function ChatPane() {
   const sidecarReady = status.health === "healthy";
   const hasMessages = messages.length > 0;
   const inputDisabled = !sidecarReady || !currentModel;
-  // [START] Capability-gate attachments: only vision-capable models allow them.
-  const selectedModel = models.find((m) => m.repo_id === currentModel) ?? null;
-  const supportsVision = selectedModel?.capabilities?.includes("vision") ?? false;
-  // [END]
 
   return (
     <div className="h-full flex flex-col">
@@ -148,7 +144,6 @@ export function ChatPane() {
         onStop={stopStreaming}
         streaming={streaming}
         disabled={inputDisabled}
-        supportsVision={supportsVision}
       />
     </div>
   );
