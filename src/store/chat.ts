@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import i18n from "i18next";
 import {
   streamChat,
   type ChatContentPart,
@@ -317,6 +318,17 @@ export const useChatStore = create<ChatStoreState>((set, get) => {
     // before first token). First delta reclassifies based on markers.
     let insideThink = true;
     // [END]
+    // [START] repetition guard — some models (especially small / heavily
+    // quantized ones) get stuck in line-level loops. We track the last
+    // non-empty trimmed line and abort the stream once it repeats >=10
+    // times in a row, appending a user-facing "model limit" note instead
+    // of letting the assistant spam the same sentence forever.
+    let lastProcessedNewlineIdx = -1;
+    let lastNonEmptyLine = "";
+    let repeatCount = 0;
+    let repetitionDetected = false;
+    const REPETITION_THRESHOLD = 10;
+    // [END]
 
     // [START] rAF-batched patch — store.patchMessage does the in-memory swap;
     // DB UPDATE happens once at the end to avoid per-token SQLite churn.
@@ -446,6 +458,34 @@ export const useChatStore = create<ChatStoreState>((set, get) => {
         accumulated += frame.delta;
         deltaCount += 1;
         scheduleFlush();
+        // [START] repetition guard — parse every newline completed by this
+        // delta. Any non-empty trimmed line that matches the previous one
+        // bumps a counter; REPETITION_THRESHOLD hits abort the stream.
+        {
+          let idx = accumulated.indexOf("\n", lastProcessedNewlineIdx + 1);
+          while (idx !== -1) {
+            const line = accumulated.substring(lastProcessedNewlineIdx + 1, idx).trim();
+            lastProcessedNewlineIdx = idx;
+            if (line.length > 0) {
+              if (line === lastNonEmptyLine) {
+                repeatCount += 1;
+                if (repeatCount >= REPETITION_THRESHOLD) {
+                  repetitionDetected = true;
+                  break;
+                }
+              } else {
+                lastNonEmptyLine = line;
+                repeatCount = 1;
+              }
+            }
+            idx = accumulated.indexOf("\n", lastProcessedNewlineIdx + 1);
+          }
+        }
+        if (repetitionDetected) {
+          abortController.abort();
+          break;
+        }
+        // [END]
         // [START] owl state transition — scan accumulated tail for reasoning
         // tags. First delta decides between "thinking" (explicit <think> in
         // the first chunk) and "typing" (everything else); later deltas only
@@ -482,6 +522,21 @@ export const useChatStore = create<ChatStoreState>((set, get) => {
         // [END]
       }
       flushNow();
+
+      // [START] repetition guard — if the stream was killed because the
+      // model looped on the same line, append a user-facing limit notice
+      // instead of leaving the repeated text dangling. Returns early so
+      // the normal "happy → sound → compact" finalization is skipped.
+      if (repetitionDetected) {
+        const notice = `\n\n---\n\n_${i18n.t("chat.repeat_limit")}_`;
+        accumulated += notice;
+        useSessionsStore.getState().patchMessage(assistant.id, accumulated);
+        await updateMessageContent(assistant.id, accumulated);
+        set({ streaming: false, owlState: "idle", abortController: null });
+        drainQueue();
+        return;
+      }
+      // [END]
 
       // [START] Phase 6.2c — handle tool call if detected
       if (toolCallDetected !== null) {

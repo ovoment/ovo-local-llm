@@ -92,6 +92,7 @@
       "loop_limit": "Tool loop broken (max 5 iterations)",
       "tool_error": "Tool execution failed: {{error}}"
     },
+    "repeat_limit": "⚠️ This model hit a repetition limit. Please try a different model.",
     "drop": {
       "accept": "Drop to attach",
       "accept_hint": "Images and audio files supported",
