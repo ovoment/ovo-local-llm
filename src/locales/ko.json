@@ -17,7 +17,14 @@
   },
   "image": {
     "title": "이미지 생성",
-    "coming_soon": "이미지 생성 — Phase 7+에서 MLX 디퓨전(SDXL / Flux) 모델로 로컬 이미지 생성이 여기 붙어"
+    "coming_soon": "이미지 생성 — Phase 7+에서 MLX 디퓨전(SDXL / Flux / Z-Image) 모델로 로컬 이미지 생성이 여기 붙어",
+    "policy_heading": "계획된 정책",
+    "policy": {
+      "scope": "이 탭의 모델 목록은 이미지 생성 모델만 표시돼",
+      "unload": "이미지 모델을 로드하면 활성 채팅/코드 모델은 언로드돼 (통합 메모리 확보)",
+      "download": "모델 탭에서 Draw Things 수준의 HF 카탈로그(SD 1.5 / SDXL / Flux / ControlNet / LoRA)를 받을 수 있어",
+      "settings": "설정: 모델 · LoRA · 컨트롤 · 강도 · 시드 · 이미지 크기 · 단계 · 텍스트 가이드 · 샘플러 · 시프트 · 배치 · 프롬프트/네거티브"
+    }
   },
   "sidecar": {
     "status": {

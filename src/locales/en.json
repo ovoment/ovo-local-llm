@@ -17,7 +17,14 @@
   },
   "image": {
     "title": "Image generation",
-    "coming_soon": "Image generation — MLX diffusion (SDXL / Flux) for local image synthesis lands here in Phase 7+"
+    "coming_soon": "Image generation — MLX diffusion (SDXL / Flux / Z-Image) for local image synthesis lands here in Phase 7+",
+    "policy_heading": "Planned policy",
+    "policy": {
+      "scope": "The model picker in this tab will only list image-generation models",
+      "unload": "Loading an image model unloads the active chat/code LLM to free unified memory",
+      "download": "Pull Draw Things-level catalog coverage (SD 1.5 / SDXL / Flux / ControlNet / LoRA) from HF via the Models tab",
+      "settings": "Settings: model · LoRA · control · strength · seed · size · steps · CFG · sampler · shift · batch · prompt/negative"
+    }
   },
   "sidecar": {
     "status": {
