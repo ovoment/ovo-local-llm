@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { CompactStrategy, Message, Session } from "../types/ovo";
+import { unloadLoadedModels } from "../lib/api";
 import {
   appendMessage as dbAppendMessage,
   clearMessages as dbClearMessages,
@@ -178,12 +179,22 @@ export const useSessionsStore = create<SessionsState>((set, get) => ({
   },
 
   setSessionModel: async (id, modelRef) => {
+    const prev = get().sessions.find((x) => x.id === id)?.model_ref ?? null;
     await dbSetModelRef(id, modelRef);
     set((s) => ({
       sessions: s.sessions.map((x) =>
         x.id === id ? { ...x, model_ref: modelRef } : x,
       ),
     }));
+    // [START] free unified memory when the session's model actually changes
+    // to a different ref (or is cleared). Fire-and-forget so the UI swap
+    // isn't blocked by the sidecar's unload work.
+    if (prev && prev !== modelRef) {
+      void unloadLoadedModels().catch(() => {
+        /* silent — next load will evict anyway */
+      });
+    }
+    // [END]
   },
 
   setSessionContextTokens: async (id, tokens) => {

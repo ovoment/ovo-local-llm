@@ -235,3 +235,15 @@ export async function summarize(
   return jsonOrThrow<SummarizeResult>(resp);
 }
 // [END]
+
+// [START] unloadLoadedModels — asks the sidecar to drop every currently-held
+// MLX runner (text + vlm pools). Used when the user switches session models
+// so unified memory isn't wedged by the previous model. Fire-and-forget from
+// the caller — failures are swallowed by the caller's try/catch if present.
+export async function unloadLoadedModels(
+  ports: SidecarPorts = DEFAULT_PORTS,
+): Promise<{ freed: string[] }> {
+  const resp = await fetch(`${nativeBase(ports)}/ovo/unload`, { method: "POST" });
+  return jsonOrThrow<{ freed: string[] }>(resp);
+}
+// [END]
