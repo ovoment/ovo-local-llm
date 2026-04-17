@@ -273,8 +273,10 @@ function McpSearchPanel({ installedNames, onInstall }: McpSearchPanelProps) {
           let data: unknown;
           try {
             data = JSON.parse(raw);
-          } catch {
+          } catch (err) {
+            console.warn("npm_search: invalid JSON", err);
             setResults([]);
+            setError(t("settings.mcp.search_error"));
             return;
           }
           if (!isNpmSearchResponse(data)) {
@@ -287,8 +289,13 @@ function McpSearchPanel({ installedNames, onInstall }: McpSearchPanelProps) {
             .filter((pkg) => !installedNames.has(pkg.name));
           setResults(filtered);
         })
-        .catch(() => {
-          setError(t("settings.mcp.search_error"));
+        .catch((err: unknown) => {
+          // Surface the actual Rust error so the user can tell apart
+          // "command not found" (needs app restart after Rust rebuild)
+          // from a real network / registry failure.
+          const msg = err instanceof Error ? err.message : String(err ?? "");
+          console.warn("npm_search failed:", msg);
+          setError(`${t("settings.mcp.search_error")} — ${msg}`);
         })
         .finally(() => setLoading(false));
     }, 300);

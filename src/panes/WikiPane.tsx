@@ -78,11 +78,19 @@ export function WikiPane() {
   }, [draftTitle, draftContent, selected, update]);
   // [END]
 
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
   async function handleCreate() {
-    const title = window.prompt(t("wiki.new_prompt")) ?? "";
-    if (!title.trim()) return;
-    const page = await create({ title: title.trim() });
+    // Create a blank page immediately and focus the title input — avoids
+    // window.prompt() which is unreliable in the Tauri webview, and matches
+    // the Notion / Obsidian / Figma new-item UX.
+    const page = await create({ title: t("wiki.untitled") });
     setSelectedId(page.id);
+    // Focus the title input on the next paint after state has propagated.
+    setTimeout(() => {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }, 50);
   }
 
   async function handleDelete() {
@@ -174,6 +182,7 @@ export function WikiPane() {
           <>
             <header className="flex items-center gap-2 px-4 py-3 border-b border-ovo-border">
               <input
+                ref={titleInputRef}
                 type="text"
                 value={draftTitle}
                 onChange={(e) => setDraftTitle(e.target.value)}
