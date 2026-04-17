@@ -1,11 +1,11 @@
 import { memo, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
-import type { ChatMessage } from "../types/ovo";
+import type { Message } from "../types/ovo";
 import { AttachmentChip } from "./AttachmentChip";
 
 interface Props {
-  message: ChatMessage;
+  message: Message;
   streaming?: boolean;
 }
 
@@ -185,7 +185,30 @@ function ThinkBlock({ content, open }: { content: string; open: boolean }) {
 }
 
 function ChatMessageBubbleImpl({ message, streaming }: Props) {
+  const { t } = useTranslation();
   const isUser = message.role === "user";
+  const isSummary = message.role === "summary";
+  const isSystem = message.role === "system";
+
+  // [START] Summary bubble — auto-compact insertion. Rendered as a muted,
+  // centered card so the user recognizes it as synthesized context rather than
+  // the model's own turn.
+  if (isSummary) {
+    return (
+      <div className="flex justify-center">
+        <div className="max-w-[88%] rounded-xl bg-[#FAF3E7] border border-dashed border-[#C78D73] text-[#5C3A2E] px-3.5 py-2 text-xs">
+          <div className="text-[10px] uppercase tracking-wider text-[#A3664F] mb-1">
+            {t("chat.summary_badge")}
+          </div>
+          <div className="whitespace-pre-wrap">{message.content}</div>
+        </div>
+      </div>
+    );
+  }
+  if (isSystem) {
+    return null;
+  }
+  // [END]
 
   if (isUser) {
     const hasAttachments = (message.attachments?.length ?? 0) > 0;

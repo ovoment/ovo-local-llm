@@ -47,19 +47,39 @@ export interface ChatCompletionRequest {
   max_tokens?: number;
 }
 
+// [START] StreamChatResult — callers that need usage totals (session.context_tokens
+// update, auto-compact trigger) get the server's final usage frame. Non-stream
+// consumers can ignore `usage` and just consume deltas.
+export interface StreamUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
+export interface StreamChatYield {
+  delta?: string;
+  usage?: StreamUsage;
+}
+// [END]
+
 /**
  * Stream chat completions via the OpenAI-compat SSE endpoint.
- * Yields incremental content deltas as they arrive.
+ * Yields incremental content deltas and, if `include_usage` is true,
+ * a final usage object (no delta) just before the stream closes.
  */
 export async function* streamChat(
   req: ChatCompletionRequest,
   signal?: AbortSignal,
   ports: SidecarPorts = DEFAULT_PORTS,
-): AsyncGenerator<string, void, void> {
+): AsyncGenerator<StreamChatYield, void, void> {
   const resp = await fetch(`${openaiBase(ports)}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...req, stream: true }),
+    body: JSON.stringify({
+      ...req,
+      stream: true,
+      stream_options: { include_usage: true },
+    }),
     signal,
   });
   if (!resp.ok || !resp.body) {
@@ -84,6 +104,7 @@ export async function* streamChat(
       try {
         const parsed = JSON.parse(payload) as {
           choices?: Array<{ delta?: { content?: string } }>;
+          usage?: StreamUsage;
           error?: { type?: string; message?: string };
         };
         // [START] sidecar emits an error frame when generation fails mid-stream —
@@ -95,8 +116,12 @@ export async function* streamChat(
           throw new Error(`${typ}${msg}`);
         }
         // [END]
+        if (parsed.usage) {
+          yield { usage: parsed.usage };
+          continue;
+        }
         const delta = parsed.choices?.[0]?.delta?.content;
-        if (delta) yield delta;
+        if (delta) yield { delta };
       } catch (e) {
         // Re-throw our own error frame; swallow JSON parse errors from partial chunks.
         if (e instanceof Error && e.message && !e.message.startsWith("Unexpected")) throw e;
@@ -104,3 +129,45 @@ export async function* streamChat(
     }
   }
 }
+
+// [START] /ovo/count_tokens + /ovo/summarize — native sidecar endpoints used
+// by auto-compact engine and session token preview.
+export interface CountTokensMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+  images?: string[];
+}
+
+export async function countTokens(
+  model: string,
+  messages: CountTokensMessage[],
+  ports: SidecarPorts = DEFAULT_PORTS,
+): Promise<number> {
+  const resp = await fetch(`${nativeBase(ports)}/ovo/count_tokens`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model, messages }),
+  });
+  const data = await jsonOrThrow<{ prompt_tokens: number }>(resp);
+  return data.prompt_tokens;
+}
+
+export interface SummarizeResult {
+  summary: string;
+  usage: StreamUsage;
+}
+
+export async function summarize(
+  model: string,
+  messages: CountTokensMessage[],
+  opts: { max_tokens?: number; instruction?: string } = {},
+  ports: SidecarPorts = DEFAULT_PORTS,
+): Promise<SummarizeResult> {
+  const resp = await fetch(`${nativeBase(ports)}/ovo/summarize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model, messages, ...opts }),
+  });
+  return jsonOrThrow<SummarizeResult>(resp);
+}
+// [END]

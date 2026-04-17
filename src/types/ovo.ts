@@ -25,6 +25,7 @@ export interface OvoModel {
   hidden_size?: number | null;
   source: ModelSource;
   capabilities: ModelCapability[];
+  max_context?: number | null;
 }
 
 export type ChatAttachment =
@@ -53,3 +54,44 @@ export interface OvoModelsResponse {
   count: number;
   cache_dirs: { hf: string; lmstudio: string };
 }
+
+// [START] Phase R — session + message + per-model context override types.
+// Mirror the SQLite schema (see src-tauri/migrations/001_init.sql). All
+// timestamps are epoch milliseconds. Booleans are surfaced as 0/1 at the
+// DB layer and translated to actual booleans in the TypeScript shape.
+
+export type CompactStrategy = "auto" | "manual" | "warn_only";
+export type MessageRole = "user" | "assistant" | "system" | "summary";
+
+export interface Session {
+  id: string;
+  title: string;
+  model_ref: string | null;
+  system_prompt: string | null;
+  compact_strategy: CompactStrategy;
+  pinned: boolean;
+  context_tokens: number;
+  compacting: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface Message {
+  id: string;
+  session_id: string;
+  role: MessageRole;
+  content: string;
+  attachments: ChatAttachment[] | null;
+  prompt_tokens: number | null;
+  generation_tokens: number | null;
+  compacted: boolean;
+  created_at: number;
+}
+
+export interface ModelContextOverride {
+  repo_id: string;
+  max_context: number;
+  warn_threshold: number;
+  updated_at: number;
+}
+// [END]
