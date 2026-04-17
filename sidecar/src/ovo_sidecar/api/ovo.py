@@ -45,6 +45,9 @@ def _serialize_model(m: hf_scanner.ScannedModel) -> dict[str, Any]:
         "architecture": arch[0] if arch else None,
         "quantization": quant,
         "hidden_size": m.config.get("hidden_size"),
+        # [START] surface cache source so UI can distinguish HF vs LM Studio
+        "source": m.source,
+        # [END]
     }
 
 
@@ -62,9 +65,18 @@ def _serialize_task(t: DownloadTask) -> dict[str, Any]:
 
 @router.get("/models")
 async def list_local_models(mlx_only: bool = True) -> dict[str, Any]:
-    scanned = hf_scanner.scan(settings.hf_cache_dir)
+    # [START] use merged HF + LM Studio scan
+    scanned = hf_scanner.scan_all()
     models = [_serialize_model(m) for m in scanned if (not mlx_only or m.is_mlx)]
-    return {"models": models, "count": len(models), "cache_dir": str(settings.hf_cache_dir)}
+    return {
+        "models": models,
+        "count": len(models),
+        "cache_dirs": {
+            "hf": str(settings.hf_cache_dir),
+            "lmstudio": str(settings.lmstudio_cache_dir),
+        },
+    }
+    # [END]
 
 
 @router.get("/models/search")
@@ -97,12 +109,23 @@ async def list_downloads() -> dict[str, Any]:
 
 @router.delete("/models/{repo_id:path}")
 async def delete_model(repo_id: str) -> dict[str, Any]:
+    # [START] reject deletes targeting foreign stores (LM Studio)
     target_name = f"models--{repo_id.replace('/', '--')}"
     model_dir = settings.hf_cache_dir / target_name
     if not model_dir.exists():
+        resolved = hf_scanner.resolve_path(repo_id)
+        if resolved is not None:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"{repo_id} lives in a non-HF store ({resolved}); "
+                    "OVO only manages ~/.cache/huggingface/hub"
+                ),
+            )
         raise HTTPException(status_code=404, detail=f"model not found: {repo_id}")
     shutil.rmtree(model_dir)
     return {"deleted": repo_id}
+    # [END]
 
 
 @router.get("/settings")
@@ -116,6 +139,7 @@ async def get_settings() -> dict[str, Any]:
             "native": settings.native_port,
         },
         "hf_cache_dir": str(settings.hf_cache_dir),
+        "lmstudio_cache_dir": str(settings.lmstudio_cache_dir),
         "data_dir": str(settings.data_dir),
         "default_context_length": settings.default_context_length,
         "max_tokens_cap": settings.max_tokens_cap,

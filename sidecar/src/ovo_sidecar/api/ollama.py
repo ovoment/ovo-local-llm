@@ -53,10 +53,20 @@ def _opts(o: dict | None) -> tuple[int, float | None, float | None]:
     return max_tokens, o.get("temperature"), o.get("top_p")
 
 
+# [START] resolve alias + local path (LM Studio / HF cache)
+def _resolve_ref(name: str):
+    repo_id = registry.resolve(name)
+    local = hf_scanner.resolve_path(repo_id)
+    return local if local is not None else repo_id
+# [END]
+
+
 @router.get("/api/tags")
 async def list_tags() -> dict[str, Any]:
-    scanned = hf_scanner.scan(settings.hf_cache_dir)
+    # [START] merged HF + LM Studio scan
+    scanned = hf_scanner.scan_all()
     models: list[dict[str, Any]] = []
+    # [END]
     for m in scanned:
         if not m.is_mlx:
             continue
@@ -85,7 +95,7 @@ async def list_tags() -> dict[str, Any]:
 
 @router.post("/api/chat")
 async def chat(req: OllamaChatRequest):
-    model_id = registry.resolve(req.model)
+    model_id = _resolve_ref(req.model)
     messages = [ChatMessage(role=m.role, content=m.content) for m in req.messages]
     max_tokens, temp, top_p = _opts(req.options)
 
@@ -143,7 +153,7 @@ async def chat(req: OllamaChatRequest):
 
 @router.post("/api/generate")
 async def generate(req: OllamaGenerateRequest):
-    model_id = registry.resolve(req.model)
+    model_id = _resolve_ref(req.model)
     max_tokens, temp, top_p = _opts(req.options)
 
     if req.stream:

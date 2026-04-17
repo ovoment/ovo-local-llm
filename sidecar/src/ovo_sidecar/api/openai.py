@@ -46,22 +46,32 @@ def _cap(mt: int | None) -> int:
     return min(int(mt), settings.max_tokens_cap)
 
 
+# [START] resolve alias + local path so mlx-lm gets a filesystem path when available
+def _resolve_ref(name: str):
+    repo_id = registry.resolve(name)
+    local = hf_scanner.resolve_path(repo_id)
+    return local if local is not None else repo_id
+# [END]
+
+
 @router.get("/models")
 async def list_models() -> dict[str, Any]:
-    scanned = hf_scanner.scan(settings.hf_cache_dir)
+    # [START] merged HF + LM Studio scan
+    scanned = hf_scanner.scan_all()
     return {
         "object": "list",
         "data": [
-            {"id": m.repo_id, "object": "model", "created": 0, "owned_by": "local"}
+            {"id": m.repo_id, "object": "model", "created": 0, "owned_by": m.source}
             for m in scanned
             if m.is_mlx
         ],
     }
+    # [END]
 
 
 @router.post("/chat/completions")
 async def chat_completions(req: OpenAIChatRequest):
-    model_id = registry.resolve(req.model)
+    model_id = _resolve_ref(req.model)
     messages = [ChatMessage(role=m.role, content=m.content) for m in req.messages]
     max_tokens = _cap(req.max_tokens)
     completion_id = f"chatcmpl-{uuid.uuid4().hex[:24]}"
@@ -144,7 +154,7 @@ async def chat_completions(req: OpenAIChatRequest):
 
 @router.post("/completions")
 async def completions(req: OpenAICompletionRequest):
-    model_id = registry.resolve(req.model)
+    model_id = _resolve_ref(req.model)
     max_tokens = _cap(req.max_tokens)
     completion_id = f"cmpl-{uuid.uuid4().hex[:24]}"
     created = int(time.time())

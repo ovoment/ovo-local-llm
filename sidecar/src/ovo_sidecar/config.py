@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     native_port: int = 11437
 
     hf_cache_dir: Path = Path.home() / ".cache" / "huggingface" / "hub"
+    # [START] LM Studio cache integration — discover MLX models from LM Studio layout
+    lmstudio_cache_dir: Path = Path.home() / ".lmstudio" / "models"
+    # [END]
     data_dir: Path = Path.home() / "Library" / "Application Support" / "OVO"
 
     default_model: str | None = None
