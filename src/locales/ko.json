@@ -44,7 +44,8 @@
     "attach_url": "URL 추가",
     "url_placeholder": "https://...",
     "remove_attachment": "첨부 제거",
-    "attach_unsupported": "이 모델은 텍스트 전용이야"
+    "attach_unsupported": "이 모델은 텍스트 전용이야",
+    "queue_badge": "대기 중 {{count}}건"
   },
   "models": {
     "title": "설치된 모델",
@@ -75,7 +76,54 @@
     "ports": "포트",
     "expose_to_network": "네트워크 공개",
     "claude_integration": "Claude 연동",
-    "pet_enabled": "데스크톱 펫 활성화"
+    "pet_enabled": "데스크톱 펫 활성화",
+    "chat_input": {
+      "section_title": "대화 입력",
+      "mode_queue_label": "대기열 (기본)",
+      "mode_queue_help": "스트리밍 중 메시지를 보내면 대기열에 쌓이고, 답변이 끝난 후 자동으로 전송돼",
+      "mode_interrupt_label": "끊고 보내기",
+      "mode_interrupt_help": "스트리밍 중 메시지를 보내면 현재 답변을 중단하고 즉시 새 메시지를 전송해",
+      "mode_block_label": "차단 (기존 동작)",
+      "mode_block_help": "스트리밍 중에는 입력창이 비활성화되어 메시지를 보낼 수 없어"
+    },
+    "context": {
+      "section_title": "컨텍스트 관리",
+      "strategy_label": "Compact 전략",
+      "strategy_auto": "자동 압축 (기본)",
+      "strategy_manual": "수동 압축만",
+      "strategy_warn_only": "경고만 (압축 없음)",
+      "global_threshold_label": "전역 경고 임계치",
+      "overrides_title": "모델별 max_context override",
+      "overrides_column_repo": "모델",
+      "overrides_column_max_context": "max_context",
+      "overrides_column_threshold": "임계치",
+      "overrides_column_action": "작업",
+      "overrides_empty": "등록된 override가 없어",
+      "overrides_add": "+ 모델 override 추가",
+      "overrides_auto_detected": "자동 감지",
+      "overrides_confirm_delete": "이 override를 삭제할까?"
+    }
+  },
+  "recents": {
+    "title": "최근 대화",
+    "new": "새 세션",
+    "search_placeholder": "검색…",
+    "pinned": "고정됨",
+    "recent": "최근",
+    "empty": "세션이 없어. + 버튼으로 시작해봐",
+    "rename": "이름 변경",
+    "pin": "고정",
+    "unpin": "고정 해제",
+    "delete": "삭제",
+    "confirm_delete": "정말 삭제할까?"
+  },
+  "context": {
+    "tooltip_remaining": "{{percent}}% 남음 — 자동 압축까지",
+    "tooltip_usage": "{{used}} / {{total}} 토큰 사용 중",
+    "tooltip_click_to_compact": "링 클릭 = 지금 압축",
+    "reset": "리셋",
+    "escape_to_new": "새 세션으로 탈출",
+    "clear_messages": "메시지 지우기"
   },
   "common": {
     "loading": "불러오는 중…",
@@ -84,5 +132,12 @@
     "close": "닫기",
     "save": "저장",
     "cancel": "취소"
+  },
+  "compact": {
+    "in_progress": "요약 중…",
+    "auto_success": "자동 요약으로 컨텍스트 {{freed}}% 확보 ✨",
+    "manual_success": "수동 요약 완료",
+    "error": "요약 실패: {{error}}",
+    "nothing_to_compact": "압축할 메시지가 없어"
   }
 }

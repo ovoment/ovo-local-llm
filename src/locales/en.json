@@ -44,7 +44,8 @@
     "attach_url": "Add URL",
     "url_placeholder": "https://...",
     "remove_attachment": "Remove attachment",
-    "attach_unsupported": "This model is text-only"
+    "attach_unsupported": "This model is text-only",
+    "queue_badge": "{{count}} queued"
   },
   "models": {
     "title": "Installed models",
@@ -75,7 +76,54 @@
     "ports": "Ports",
     "expose_to_network": "Expose to network",
     "claude_integration": "Claude integration",
-    "pet_enabled": "Desktop pet"
+    "pet_enabled": "Desktop pet",
+    "chat_input": {
+      "section_title": "Chat Input",
+      "mode_queue_label": "Queue (default)",
+      "mode_queue_help": "Messages sent during streaming are queued and auto-sent when the current response finishes.",
+      "mode_interrupt_label": "Interrupt & send",
+      "mode_interrupt_help": "Sending during streaming stops the current response immediately and sends your new message.",
+      "mode_block_label": "Block (legacy)",
+      "mode_block_help": "Input is disabled while the assistant is streaming. No messages can be sent until it finishes."
+    },
+    "context": {
+      "section_title": "Context Management",
+      "strategy_label": "Compact strategy",
+      "strategy_auto": "Auto-compact (default)",
+      "strategy_manual": "Manual compact only",
+      "strategy_warn_only": "Warn only (no compact)",
+      "global_threshold_label": "Global warn threshold",
+      "overrides_title": "Per-model max_context overrides",
+      "overrides_column_repo": "Model",
+      "overrides_column_max_context": "max_context",
+      "overrides_column_threshold": "Threshold",
+      "overrides_column_action": "Action",
+      "overrides_empty": "No overrides configured",
+      "overrides_add": "+ Add model override",
+      "overrides_auto_detected": "Auto-detected",
+      "overrides_confirm_delete": "Delete this override?"
+    }
+  },
+  "recents": {
+    "title": "Recents",
+    "new": "New session",
+    "search_placeholder": "Search…",
+    "pinned": "Pinned",
+    "recent": "Recent",
+    "empty": "No sessions yet. Press + to start.",
+    "rename": "Rename",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "delete": "Delete",
+    "confirm_delete": "Confirm delete?"
+  },
+  "context": {
+    "tooltip_remaining": "{{percent}}% remaining — until auto-compact",
+    "tooltip_usage": "{{used}} / {{total}} tokens used",
+    "tooltip_click_to_compact": "Click ring to compact now",
+    "reset": "Reset",
+    "escape_to_new": "Escape to new session",
+    "clear_messages": "Clear messages"
   },
   "common": {
     "loading": "Loading…",
@@ -84,5 +132,12 @@
     "close": "Close",
     "save": "Save",
     "cancel": "Cancel"
+  },
+  "compact": {
+    "in_progress": "Compacting…",
+    "auto_success": "Auto-compact freed {{freed}}% of context ✨",
+    "manual_success": "Manual compact done",
+    "error": "Compact failed: {{error}}",
+    "nothing_to_compact": "Nothing to compact"
   }
 }
