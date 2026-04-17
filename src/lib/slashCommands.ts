@@ -19,6 +19,8 @@ export interface SlashCommandContext {
   clearChat?: () => Promise<void> | void;
   cycleProfile?: () => void;
   openPane?: (pane: "wiki" | "models" | "settings" | "image" | "code" | "chat") => void;
+  compact?: () => Promise<void> | void;
+  addMemoryNote?: (text: string) => Promise<void> | void;
 }
 
 export interface SlashCommand {
@@ -141,17 +143,25 @@ export const SLASH_COMMANDS: ReadonlyArray<SlashCommand> = [
     id: "compact",
     name: "/compact",
     emoji: "🗜",
-    description: "현재 세션 수동 축약 (구현 예정)",
+    description: "현재 세션 수동 축약 (낡은 메시지 → 요약)",
     kind: "action",
-    placeholder: true,
+    run: (ctx) => {
+      if (ctx.compact) void ctx.compact();
+      return null;
+    },
   },
   {
     id: "memory",
     name: "/memory",
     emoji: "🧠",
-    description: "메모리 관리 (구현 예정)",
+    description: "위키에 Note 추가 — `/memory 기록할 텍스트`",
     kind: "action",
-    placeholder: true,
+    run: (ctx, args) => {
+      const text = args.trim();
+      if (!text) return null;
+      if (ctx.addMemoryNote) void ctx.addMemoryNote(text);
+      return null;
+    },
   },
   {
     id: "skills",

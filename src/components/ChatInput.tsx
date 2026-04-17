@@ -14,6 +14,8 @@ import { SlashCommandPopup } from "./SlashCommandPopup";
 import { useSessionsStore } from "../store/sessions";
 import { useModelProfilesStore } from "../store/model_profiles";
 import { useToastsStore } from "../store/toasts";
+import { runCompact } from "../lib/compact";
+import { useWikiStore } from "../store/wiki";
 // [END]
 
 interface Props {
@@ -148,6 +150,38 @@ export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
         window.dispatchEvent(
           new CustomEvent("ovo:navigate", { detail: pane }),
         );
+      },
+      compact: async () => {
+        const sessionId = useSessionsStore.getState().currentSessionId;
+        if (!sessionId) {
+          useToastsStore.getState().push({
+            kind: "error",
+            message: "활성 세션이 없어",
+          });
+          return;
+        }
+        const toasts = useToastsStore.getState();
+        toasts.push({ kind: "info", message: "세션 축약 시작…" });
+        const res = await runCompact(sessionId, { strategy: "manual" });
+        if (res.ok) {
+          toasts.push({
+            kind: "success",
+            message: `세션 축약 완료 · ${res.freed} 토큰 확보`,
+          });
+        } else {
+          toasts.push({ kind: "error", message: `축약 실패: ${res.reason}` });
+        }
+      },
+      addMemoryNote: async (text) => {
+        const title =
+          text.length > 40 ? `${text.slice(0, 40).trim()}…` : text.trim();
+        const page = await useWikiStore
+          .getState()
+          .create({ title, content: text, tier: "note" });
+        useToastsStore.getState().push({
+          kind: "success",
+          message: `📝 위키에 추가됨 — ${page.title}`,
+        });
       },
     };
   }
