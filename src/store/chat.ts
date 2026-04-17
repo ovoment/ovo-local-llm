@@ -502,8 +502,28 @@ export const useChatStore = create<ChatStoreState>((set, get) => {
       let toolCallDetected: Awaited<ReturnType<typeof parseToolUseBlock>> = null;
       // [END]
 
+      // [START] Phase 6.4 — per-request sampling parameters sourced from
+      // chat settings. Undefined values stay off the wire so the sidecar
+      // keeps its defaults when the user hasn't touched the slider.
+      const cs = useChatSettingsStore.getState();
+      const samplingParams: Partial<{
+        temperature: number;
+        top_p: number;
+        repetition_penalty: number;
+        max_tokens: number;
+      }> = {};
+      if (typeof cs.temperature === "number") samplingParams.temperature = cs.temperature;
+      if (typeof cs.top_p === "number") samplingParams.top_p = cs.top_p;
+      if (typeof cs.repetition_penalty === "number" && cs.repetition_penalty > 1) {
+        samplingParams.repetition_penalty = cs.repetition_penalty;
+      }
+      if (typeof cs.max_tokens === "number" && cs.max_tokens > 0) {
+        samplingParams.max_tokens = cs.max_tokens;
+      }
+      // [END]
+
       for await (const frame of streamChat(
-        { model: modelRef, messages: normalizeWire(wire) },
+        { model: modelRef, messages: normalizeWire(wire), ...samplingParams },
         abortController.signal,
         ports,
       )) {

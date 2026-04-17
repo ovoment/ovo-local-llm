@@ -47,6 +47,8 @@ export interface ChatCompletionRequest {
   model: string;
   messages: ChatWireMessage[];
   temperature?: number;
+  top_p?: number;
+  repetition_penalty?: number;
   max_tokens?: number;
 }
 

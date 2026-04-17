@@ -179,6 +179,20 @@
       "sound_label": "답변 완료 알림음",
       "sound_help": "모델이 답변을 마치면 짧은 부엉이 소리를 재생해"
     },
+    "sampling": {
+      "section_title": "샘플링 파라미터",
+      "description": "모델의 생성 동작을 조절해. 반복이 심하거나 답변이 밋밋하면 여기서 손보면 돼.",
+      "reset": "기본값 복원",
+      "temperature": "Temperature",
+      "temperature_help": "높을수록 창의적이고 다양, 낮을수록 보수적이고 결정적. 권장 0.6 ~ 0.9.",
+      "top_p": "Top-p (nucleus)",
+      "top_p_help": "누적 확률 상위 p% 토큰만 후보로. 낮을수록 보수적. 권장 0.9 ~ 0.95.",
+      "repetition_penalty": "Repetition penalty",
+      "repetition_penalty_help": "같은 토큰 재등장 억제. 1.0은 꺼짐. 반복 루프 모델엔 1.1 ~ 1.15 권장.",
+      "max_tokens": "Max tokens",
+      "max_tokens_help": "한 번에 생성할 최대 토큰 수. 무제한이면 EOS 또는 모델 기본 한계까지.",
+      "max_tokens_unlimited": "무제한"
+    },
     "advanced": {
       "section_title": "고급 / 외부 연결",
       "description": "다른 앱(Cursor, Continue.dev, Zed...)에서 OVO를 로컬 LLM 서버로 사용할 수 있어. 아래 URL을 각 툴의 base URL로 지정해줘.",

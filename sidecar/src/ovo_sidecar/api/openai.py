@@ -88,6 +88,7 @@ class OpenAIChatRequest(BaseModel):
     stream: bool = False
     temperature: float | None = None
     top_p: float | None = None
+    repetition_penalty: float | None = None
     max_tokens: int | None = None
     stream_options: OpenAIStreamOptions | None = None
 
@@ -98,6 +99,7 @@ class OpenAICompletionRequest(BaseModel):
     stream: bool = False
     temperature: float | None = None
     top_p: float | None = None
+    repetition_penalty: float | None = None
     max_tokens: int | None = None
 
 
@@ -185,6 +187,7 @@ async def chat_completions(req: OpenAIChatRequest):
                 max_tokens=max_tokens,
                 temperature=req.temperature,
                 top_p=req.top_p,
+                repetition_penalty=req.repetition_penalty,
             )
 
         stream_iter = _vlm_stream
@@ -198,6 +201,7 @@ async def chat_completions(req: OpenAIChatRequest):
                 max_tokens=max_tokens,
                 temperature=req.temperature,
                 top_p=req.top_p,
+                repetition_penalty=req.repetition_penalty,
             )
 
         stream_iter = _text_stream
@@ -338,6 +342,7 @@ async def completions(req: OpenAICompletionRequest):
                 max_tokens=max_tokens,
                 temperature=req.temperature,
                 top_p=req.top_p,
+                repetition_penalty=req.repetition_penalty,
             ):
                 payload = {
                     "id": completion_id,
@@ -369,6 +374,7 @@ async def completions(req: OpenAICompletionRequest):
         max_tokens=max_tokens,
         temperature=req.temperature,
         top_p=req.top_p,
+        repetition_penalty=req.repetition_penalty,
     ):
         text += chunk.text
         if chunk.done:

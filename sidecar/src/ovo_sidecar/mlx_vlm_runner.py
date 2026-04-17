@@ -173,6 +173,7 @@ class MlxVlmRunner:
         max_tokens: int = 512,
         temperature: float | None = None,
         top_p: float | None = None,
+        repetition_penalty: float | None = None,
     ) -> AsyncIterator[GenerationChunk]:
         loaded = await self.ensure_loaded(model_ref)
 
@@ -200,7 +201,9 @@ class MlxVlmRunner:
             num_audios=len(audios),
         )
 
-        async for chunk in self._astream(loaded, formatted, images, audios, max_tokens, temperature, top_p):
+        async for chunk in self._astream(
+            loaded, formatted, images, audios, max_tokens, temperature, top_p, repetition_penalty,
+        ):
             yield chunk
 
     # [START] Token counting — VLMs format the prompt with apply_chat_template
@@ -245,6 +248,7 @@ class MlxVlmRunner:
         max_tokens: int,
         temperature: float | None,
         top_p: float | None,
+        repetition_penalty: float | None = None,
     ) -> AsyncIterator[GenerationChunk]:
         from mlx_vlm import stream_generate
 
@@ -271,6 +275,12 @@ class MlxVlmRunner:
                     kwargs["temperature"] = float(temperature)
                 if top_p is not None:
                     kwargs["top_p"] = float(top_p)
+                # [START] Phase 6.4 — forward repetition penalty when the caller
+                # asks for one. mlx-vlm accepts it as a plain kwarg; older
+                # versions ignore unknown kwargs, so we swallow at call time.
+                if repetition_penalty is not None and float(repetition_penalty) > 1.0:
+                    kwargs["repetition_penalty"] = float(repetition_penalty)
+                # [END]
                 # [START] Pass audio paths when present; stream_generate kwarg is `audio`
                 if audios:
                     kwargs["audio"] = audios if len(audios) > 1 else audios[0]

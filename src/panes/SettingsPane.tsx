@@ -531,6 +531,17 @@ export function SettingsPane() {
   const setDefaultStrategy = useChatSettingsStore((s) => s.setDefaultStrategy);
   const setGlobalWarnThreshold = useChatSettingsStore((s) => s.setGlobalWarnThreshold);
   const setStreamingSendMode = useChatSettingsStore((s) => s.setStreamingSendMode);
+  // [START] Phase 6.4 — sampling parameters (T / top_p / rep. penalty / max tokens)
+  const temperature = useChatSettingsStore((s) => s.temperature);
+  const topP = useChatSettingsStore((s) => s.top_p);
+  const repetitionPenalty = useChatSettingsStore((s) => s.repetition_penalty);
+  const maxTokens = useChatSettingsStore((s) => s.max_tokens);
+  const setTemperature = useChatSettingsStore((s) => s.setTemperature);
+  const setTopP = useChatSettingsStore((s) => s.setTopP);
+  const setRepetitionPenalty = useChatSettingsStore((s) => s.setRepetitionPenalty);
+  const setMaxTokens = useChatSettingsStore((s) => s.setMaxTokens);
+  const resetSampling = useChatSettingsStore((s) => s.resetSampling);
+  // [END]
 
   // Model overrides store
   const overrides = useModelOverridesStore((s) => s.overrides);
@@ -628,6 +639,135 @@ export function SettingsPane() {
         </label>
         <p className="ml-6 text-xs text-ovo-muted">{t("settings.chat_input.sound_help")}</p>
         {/* [END] */}
+      </section>
+      {/* [END] */}
+
+      {/* [START] Phase 6.4 — Sampling parameters section */}
+      <section className="py-4 border-b border-ovo-border">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-ovo-text">
+            {t("settings.sampling.section_title")}
+          </h3>
+          <button
+            type="button"
+            onClick={() => resetSampling()}
+            className="text-[11px] px-2 py-1 rounded bg-ovo-surface-solid text-ovo-muted hover:text-ovo-text hover:bg-ovo-bg border border-ovo-border transition"
+          >
+            {t("settings.sampling.reset")}
+          </button>
+        </div>
+        <p className="text-xs text-ovo-muted mb-4">
+          {t("settings.sampling.description")}
+        </p>
+        <div className="flex flex-col gap-5">
+          {/* Temperature */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-ovo-text">
+                {t("settings.sampling.temperature")}
+              </label>
+              <span className="text-xs font-mono tabular-nums text-ovo-muted">
+                {temperature.toFixed(2)}
+              </span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={2}
+              step={0.05}
+              value={temperature}
+              onChange={(e) => setTemperature(Number(e.target.value))}
+              className="accent-ovo-accent"
+            />
+            <p className="text-[11px] text-ovo-muted">
+              {t("settings.sampling.temperature_help")}
+            </p>
+          </div>
+
+          {/* Top-p */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-ovo-text">
+                {t("settings.sampling.top_p")}
+              </label>
+              <span className="text-xs font-mono tabular-nums text-ovo-muted">
+                {topP.toFixed(2)}
+              </span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={topP}
+              onChange={(e) => setTopP(Number(e.target.value))}
+              className="accent-ovo-accent"
+            />
+            <p className="text-[11px] text-ovo-muted">
+              {t("settings.sampling.top_p_help")}
+            </p>
+          </div>
+
+          {/* Repetition penalty */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-ovo-text">
+                {t("settings.sampling.repetition_penalty")}
+              </label>
+              <span className="text-xs font-mono tabular-nums text-ovo-muted">
+                {repetitionPenalty.toFixed(2)}
+              </span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={1.5}
+              step={0.01}
+              value={repetitionPenalty}
+              onChange={(e) => setRepetitionPenalty(Number(e.target.value))}
+              className="accent-ovo-accent"
+            />
+            <p className="text-[11px] text-ovo-muted">
+              {t("settings.sampling.repetition_penalty_help")}
+            </p>
+          </div>
+
+          {/* Max tokens */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-ovo-text">
+                {t("settings.sampling.max_tokens")}
+              </label>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1.5 text-[11px] text-ovo-muted cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={maxTokens === null}
+                    onChange={(e) => setMaxTokens(e.target.checked ? null : 2048)}
+                    className="accent-ovo-accent"
+                  />
+                  <span>{t("settings.sampling.max_tokens_unlimited")}</span>
+                </label>
+                <span className="text-xs font-mono tabular-nums text-ovo-muted w-12 text-right">
+                  {maxTokens === null ? "∞" : maxTokens}
+                </span>
+              </div>
+            </div>
+            <input
+              type="range"
+              min={128}
+              max={16384}
+              step={128}
+              disabled={maxTokens === null}
+              value={maxTokens ?? 2048}
+              onChange={(e) => setMaxTokens(Number(e.target.value))}
+              className="accent-ovo-accent disabled:opacity-40"
+            />
+            <p className="text-[11px] text-ovo-muted">
+              {t("settings.sampling.max_tokens_help")}
+            </p>
+          </div>
+        </div>
       </section>
       {/* [END] */}
 

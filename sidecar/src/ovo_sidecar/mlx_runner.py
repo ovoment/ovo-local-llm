@@ -223,10 +223,13 @@ class MlxRunner:
         max_tokens: int = 512,
         temperature: float | None = None,
         top_p: float | None = None,
+        repetition_penalty: float | None = None,
     ) -> AsyncIterator[GenerationChunk]:
         loaded = await self.ensure_loaded(model_ref)
         prompt = self._apply_chat_template(loaded.tokenizer, messages)
-        async for chunk in self._astream(loaded, prompt, max_tokens, temperature, top_p):
+        async for chunk in self._astream(
+            loaded, prompt, max_tokens, temperature, top_p, repetition_penalty
+        ):
             yield chunk
 
     # [START] Token counting — preview how many prompt tokens a pending turn
@@ -258,9 +261,12 @@ class MlxRunner:
         max_tokens: int = 512,
         temperature: float | None = None,
         top_p: float | None = None,
+        repetition_penalty: float | None = None,
     ) -> AsyncIterator[GenerationChunk]:
         loaded = await self.ensure_loaded(model_ref)
-        async for chunk in self._astream(loaded, prompt, max_tokens, temperature, top_p):
+        async for chunk in self._astream(
+            loaded, prompt, max_tokens, temperature, top_p, repetition_penalty
+        ):
             yield chunk
 
     def _apply_chat_template(self, tokenizer, messages: list[ChatMessage]) -> str:
@@ -280,6 +286,7 @@ class MlxRunner:
         max_tokens: int,
         temperature: float | None,
         top_p: float | None,
+        repetition_penalty: float | None = None,
     ) -> AsyncIterator[GenerationChunk]:
         from mlx_lm import stream_generate
 
@@ -312,6 +319,22 @@ class MlxRunner:
                     )
                 except Exception as e:  # older mlx_lm without make_sampler
                     logger.debug("sampler helper unavailable: %s", e)
+
+                # [START] Phase 6.4 — repetition penalty logits processor.
+                # Only attached when the caller explicitly passes >1.0 so
+                # quantized / small models that loop can be nudged without
+                # affecting users who rely on the default distribution.
+                if repetition_penalty is not None and float(repetition_penalty) > 1.0:
+                    try:
+                        from mlx_lm.sample_utils import make_logits_processors
+
+                        kwargs["logits_processors"] = make_logits_processors(
+                            repetition_penalty=float(repetition_penalty),
+                            repetition_context_size=20,
+                        )
+                    except Exception as e:  # older mlx_lm without the helper
+                        logger.debug("logits processor helper unavailable: %s", e)
+                # [END]
 
                 for chunk in stream_generate(loaded.model, loaded.tokenizer, prompt, **kwargs):
                     if cancelled.is_set():

@@ -179,6 +179,20 @@
       "sound_label": "Reply-complete sound",
       "sound_help": "Play a short owl hoot when the assistant finishes responding."
     },
+    "sampling": {
+      "section_title": "Sampling parameters",
+      "description": "Tune how the model generates. Dial these up or down when responses loop or feel flat.",
+      "reset": "Reset defaults",
+      "temperature": "Temperature",
+      "temperature_help": "Higher = more creative and diverse; lower = more deterministic. 0.6 ~ 0.9 is a sweet spot.",
+      "top_p": "Top-p (nucleus)",
+      "top_p_help": "Keep only the top cumulative-probability p of the vocab. Lower = more conservative. 0.9 ~ 0.95 recommended.",
+      "repetition_penalty": "Repetition penalty",
+      "repetition_penalty_help": "Penalizes re-emitting recent tokens. 1.0 disables. 1.1 ~ 1.15 is the usual fix for loopy models.",
+      "max_tokens": "Max tokens",
+      "max_tokens_help": "Cap on tokens generated per reply. Unlimited lets the model stop at EOS or its own context limit.",
+      "max_tokens_unlimited": "Unlimited"
+    },
     "advanced": {
       "section_title": "Advanced / External Connections",
       "description": "Point external tools (Cursor, Continue.dev, Zed, …) at OVO to use it as a local LLM server. Set the URLs below as the base URL in each tool.",
