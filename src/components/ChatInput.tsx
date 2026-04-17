@@ -9,6 +9,10 @@ interface Props {
   onStop: () => void;
   streaming: boolean;
   disabled?: boolean;
+  // [START] streaming send mode props
+  allowTypeDuringStreaming?: boolean;
+  queueCount?: number;
+  // [END]
 }
 
 function readImagePreview(file: File): Promise<string | null> {
@@ -26,7 +30,7 @@ function genId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function ChatInput({ onSend, onStop, streaming, disabled }: Props) {
+export function ChatInput({ onSend, onStop, streaming, disabled, allowTypeDuringStreaming = false, queueCount = 0 }: Props) {
   const { t } = useTranslation();
   const [value, setValue] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -55,7 +59,10 @@ export function ChatInput({ onSend, onStop, streaming, disabled }: Props) {
     if (urlMode) urlInputRef.current?.focus();
   }, [urlMode]);
 
-  const canSubmit = (value.trim().length > 0 || attachments.length > 0) && !streaming && !disabled;
+  // [START] textarea disabled logic — allow typing during streaming for queue/interrupt modes
+  const textareaDisabled = disabled || (streaming && !allowTypeDuringStreaming);
+  const canSubmit = (value.trim().length > 0 || attachments.length > 0) && !disabled && (allowTypeDuringStreaming || !streaming);
+  // [END]
 
   const submit = () => {
     if (!canSubmit) return;
@@ -116,6 +123,18 @@ export function ChatInput({ onSend, onStop, streaming, disabled }: Props) {
 
   return (
     <div className="p-3 bg-white/60 border-t border-[#E8CFBB]">
+      {/* [START] queue badge — shown when messages are waiting */}
+      {queueCount > 0 && (
+        <div className="mb-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FAF3E7] border border-[#E8CFBB] text-xs text-[#8B4432]">
+          <span className="inline-flex gap-0.5" aria-hidden>
+            <span className="w-1 h-1 rounded-full bg-[#D97757] animate-bounce [animation-delay:-0.3s]" />
+            <span className="w-1 h-1 rounded-full bg-[#D97757] animate-bounce [animation-delay:-0.15s]" />
+            <span className="w-1 h-1 rounded-full bg-[#D97757] animate-bounce" />
+          </span>
+          {t("chat.queue_badge", { count: queueCount })}
+        </div>
+      )}
+      {/* [END] */}
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2">
           {attachments.map((a) => (
@@ -192,7 +211,7 @@ export function ChatInput({ onSend, onStop, streaming, disabled }: Props) {
           onKeyDown={onKeyDown}
           placeholder={t("chat.placeholder")}
           rows={1}
-          disabled={disabled}
+          disabled={textareaDisabled}
           className="flex-1 resize-none max-h-40 min-h-[40px] px-3 py-2 rounded-lg bg-white border border-[#E8CFBB] text-sm text-[#2C1810] placeholder:text-[#B89888] focus:outline-none focus:border-[#D97757] focus:ring-1 focus:ring-[#D97757] disabled:opacity-50"
         />
         {streaming ? (
