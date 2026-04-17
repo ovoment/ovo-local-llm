@@ -424,6 +424,24 @@ export const useChatStore = create<ChatStoreState>((set, get) => {
       if (activeProfile?.system_prompt_extra) {
         profileLines.push(activeProfile.system_prompt_extra);
       }
+      // [START] Phase 6.4 — Plan mode reinforcement. When the tool approval
+      // mode is 'plan' we prepend an explicit instruction telling the model
+      // to describe its plan instead of running anything. Complements the
+      // synthetic tool_result the dispatcher injects: some models were
+      // trying to 'execute anyway' despite the stub result.
+      try {
+        // Lazy import to avoid a hard circular between stores.
+        const { useToolModeStore: tms } = await import("./tool_mode");
+        const currentMode = tms.getState().mode;
+        if (currentMode === "plan") {
+          profileLines.push(
+            "⚠️ 지금은 Plan 모드야. 도구를 실제로 호출하거나 외부 작업을 실행하지 마. 대신 어떤 단계로 문제를 해결할지 계획만 글머리표로 제시해. 도구가 필요하면 '이런 도구를 이렇게 쓸 것'이라고 서술만 해.",
+          );
+        }
+      } catch {
+        /* ignore import failure — plan hint is best-effort */
+      }
+      // [END]
       const profileSystemPrompt = profileLines.join("\n\n");
       // [END]
 
