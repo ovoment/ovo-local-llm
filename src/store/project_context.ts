@@ -38,13 +38,7 @@ interface RustProjectContextResult {
   files: RustProjectContextFile[];
 }
 
-// [START] Phase 6.2 — shape returned by the Rust read_md_file command
-interface RustMdFileResult {
-  name: string;
-  content: string;
-  size_bytes: number;
-}
-// [END]
+// Phase 6.1b — RustMdFileResult removed; read_md_dir is the only path in use.
 
 interface PersistedState {
   project_path: string | null;
@@ -106,14 +100,24 @@ function readStorage(): Partial<PersistedState> {
   }
 }
 
-// [START] Phase 6.2 — load a single custom file via Rust command
-async function loadCustomFile(path: string): Promise<CustomContextFile | null> {
+// [START] Phase 6.1b — each custom path is a DIRECTORY; load reads every
+// *.md / *.markdown file inside it and returns one CustomContextFile per file.
+interface RustMdDirResult {
+  files: Array<{ name: string; path: string; content: string; size_bytes: number }>;
+}
+
+async function loadCustomDir(dirPath: string): Promise<CustomContextFile[]> {
   try {
-    const result = await invoke<RustMdFileResult>("read_md_file", { path });
-    return { path, name: result.name, content: result.content, size_bytes: result.size_bytes };
+    const result = await invoke<RustMdDirResult>("read_md_dir", { path: dirPath });
+    return result.files.map((f) => ({
+      path: f.path,
+      name: f.name,
+      content: f.content,
+      size_bytes: f.size_bytes,
+    }));
   } catch (e) {
-    console.warn("project_context: failed to read custom file", path, e);
-    return null;
+    console.warn("project_context: failed to read dir", dirPath, e);
+    return [];
   }
 }
 // [END]
@@ -209,8 +213,8 @@ export const useProjectContextStore = create<ProjectContextState>((set, get) => 
       }
 
       // [START] Phase 6.2 — re-read all custom files (skip failed ones silently)
-      const loadedCustomResults = await Promise.all(custom_files.map(loadCustomFile));
-      const loaded_custom_files: CustomContextFile[] = loadedCustomResults.filter(
+      const loadedCustomResults = await Promise.all(custom_files.map(loadCustomDir));
+      const loaded_custom_files: CustomContextFile[] = loadedCustomResults.flat().filter(
         (r): r is CustomContextFile => r !== null,
       );
       // [END]
@@ -244,14 +248,16 @@ export const useProjectContextStore = create<ProjectContextState>((set, get) => 
   },
   // [END]
 
-  // [START] Phase 6.2 — addCustomFile: push path, read file, persist
+  // [START] Phase 6.1b — addCustomFile now accepts a DIRECTORY path; reads
+  // every *.md / *.markdown inside it. Kept the same action name to avoid
+  // rippling renames through consumers.
   addCustomFile: async (path: string) => {
     const { custom_files, loaded_custom_files, project_path, enabled_files } = get();
     if (custom_files.includes(path)) return; // deduplicate
 
-    const entry = await loadCustomFile(path);
+    const entries = await loadCustomDir(path);
     const next_custom_files = [...custom_files, path];
-    const next_loaded = entry ? [...loaded_custom_files, entry] : loaded_custom_files;
+    const next_loaded = [...loaded_custom_files, ...entries];
 
     set({ custom_files: next_custom_files, loaded_custom_files: next_loaded });
     persist(project_path, enabled_files, next_custom_files);

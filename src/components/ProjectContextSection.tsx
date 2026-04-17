@@ -56,18 +56,10 @@ export function ProjectContextSection() {
   const tokenEstimate = Math.round(totalChars / 3);
   // [END]
 
-  // [START] Phase 6.2 — custom file picker
+  // [START] Phase 6.1b — custom path picker: pick a folder, we read every
+  // *.md / *.markdown inside it. Multiple folders can be added.
   async function handleAddCustomFile() {
-    const selected = await open({
-      directory: false,
-      multiple: false,
-      filters: [
-        {
-          name: t("settings.project_context.custom_filter_label"),
-          extensions: ["md", "markdown", "txt"],
-        },
-      ],
-    });
+    const selected = await open({ directory: true, multiple: false });
     if (typeof selected === "string" && selected.length > 0) {
       await addCustomFile(selected);
     }
@@ -84,36 +76,34 @@ export function ProjectContextSection() {
         {t("settings.project_context.description")}
       </p>
 
-      {/* [START] folder picker row */}
+      {/* [START] folder picker row — inline [path] [btn] [btn] [btn] */}
       {project_path ? (
-        <div className="flex flex-col gap-2 mb-4">
-          <code className="text-[11px] font-mono text-ovo-text bg-ovo-chip border border-ovo-border rounded px-2 py-1.5 break-all">
+        <div className="flex items-center gap-2 mb-4">
+          <code className="flex-1 min-w-0 text-[11px] font-mono text-ovo-text bg-ovo-chip border border-ovo-border rounded px-2 py-1.5 truncate">
             {project_path}
           </code>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void handlePickFolder()}
-              className="text-xs px-2.5 py-1 rounded bg-ovo-border text-ovo-text hover:bg-ovo-accent hover:text-white transition"
-            >
-              {t("settings.project_context.change_folder")}
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleClearFolder()}
-              className="text-xs px-2.5 py-1 rounded bg-ovo-border text-ovo-text hover:bg-rose-100 hover:text-rose-700 transition"
-            >
-              {t("settings.project_context.clear_folder")}
-            </button>
-            <button
-              type="button"
-              onClick={() => void rescan()}
-              disabled={loading}
-              className="text-xs px-2.5 py-1 rounded bg-ovo-border text-ovo-text hover:bg-ovo-accent hover:text-white transition disabled:opacity-40"
-            >
-              {t("settings.project_context.rescan")}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => void handlePickFolder()}
+            className="shrink-0 text-xs px-2.5 py-1 rounded bg-ovo-border text-ovo-text hover:bg-ovo-accent hover:text-white transition"
+          >
+            {t("settings.project_context.change_folder")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleClearFolder()}
+            className="shrink-0 text-xs px-2.5 py-1 rounded bg-ovo-border text-ovo-text hover:bg-rose-100 hover:text-rose-700 transition"
+          >
+            {t("settings.project_context.clear_folder")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void rescan()}
+            disabled={loading}
+            className="shrink-0 text-xs px-2.5 py-1 rounded bg-ovo-border text-ovo-text hover:bg-ovo-accent hover:text-white transition disabled:opacity-40"
+          >
+            {t("settings.project_context.rescan")}
+          </button>
         </div>
       ) : (
         <div className="flex items-center gap-3 mb-4">
@@ -131,14 +121,16 @@ export function ProjectContextSection() {
       )}
       {/* [END] */}
 
-      {/* [START] 3 checkbox rows */}
+      {/* [START] Standard files — inline single-row layout:
+          [ ] CLAUDE.md (없음) / [ ] AGENTS.md (N B) / [ ] GEMINI.md (없음) */}
       {project_path && (
-        <div className="flex flex-col gap-2 mb-3">
-          {CONTEXT_FILENAMES.map((name) => {
+        <div className="flex items-center gap-2 flex-wrap mb-3 text-xs">
+          {CONTEXT_FILENAMES.map((name, idx) => {
             const info = fileInfo(name);
             const checked = enabled_files[name] !== false;
             return (
-              <label key={name} className="flex items-center gap-2 cursor-pointer">
+              <span key={name} className="flex items-center gap-1">
+                {idx > 0 && <span className="text-ovo-muted mx-1">/</span>}
                 <input
                   type="checkbox"
                   checked={checked}
@@ -146,26 +138,41 @@ export function ProjectContextSection() {
                   className="accent-ovo-accent"
                   disabled={!info.found}
                 />
-                <span className={`text-sm font-mono ${info.found ? "text-ovo-text" : "text-ovo-muted"}`}>
+                <span className={`font-mono ${info.found ? "text-ovo-text" : "text-ovo-muted"}`}>
                   {name}
                 </span>
-                <span className="text-xs text-ovo-muted">
+                <span className="text-ovo-muted">
                   {info.found
-                    ? t("settings.project_context.detected", { size: info.size_bytes.toLocaleString() })
+                    ? `(${info.size_bytes.toLocaleString()} B)`
                     : t("settings.project_context.not_found")}
                 </span>
-              </label>
+              </span>
             );
           })}
         </div>
       )}
       {/* [END] */}
+      {/* [END] */}
 
-      {/* [START] Phase 6.2 — custom MD files subsection */}
+      {/* [START] Phase 6.1b — custom MD directories subsection
+          Header row: "추가 MD파일"  on left, "+ 경로추가" button on right.
+          Each path = a folder; all *.md inside are auto-loaded. */}
       <div className="mt-4">
-        <h4 className="text-xs font-semibold text-ovo-text mb-2">
-          {t("settings.project_context.custom_title")}
-        </h4>
+        <div className="flex items-center justify-between mb-1">
+          <h4 className="text-xs font-semibold text-ovo-text">
+            {t("settings.project_context.custom_title")}
+          </h4>
+          <button
+            type="button"
+            onClick={() => void handleAddCustomFile()}
+            className="text-xs px-2.5 py-1 rounded bg-ovo-border text-ovo-text hover:bg-ovo-accent hover:text-white transition"
+          >
+            {t("settings.project_context.custom_add")}
+          </button>
+        </div>
+        <p className="text-[11px] text-ovo-muted mb-2">
+          {t("settings.project_context.custom_hint")}
+        </p>
 
         {custom_files.length === 0 ? (
           <p className="text-xs text-ovo-muted mb-2">
@@ -207,13 +214,6 @@ export function ProjectContextSection() {
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={() => void handleAddCustomFile()}
-          className="text-xs px-2.5 py-1 rounded bg-ovo-border text-ovo-text hover:bg-ovo-accent hover:text-white transition"
-        >
-          {t("settings.project_context.custom_add")}
-        </button>
       </div>
       {/* [END] */}
 
