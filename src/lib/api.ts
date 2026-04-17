@@ -84,11 +84,22 @@ export async function* streamChat(
       try {
         const parsed = JSON.parse(payload) as {
           choices?: Array<{ delta?: { content?: string } }>;
+          error?: { type?: string; message?: string };
         };
+        // [START] sidecar emits an error frame when generation fails mid-stream —
+        // raise so the caller sees a real message instead of the headers-already-sent
+        // "Load failed" that happens when the connection is just dropped.
+        if (parsed.error) {
+          const msg = parsed.error.message ?? "stream failed";
+          const typ = parsed.error.type ? `${parsed.error.type}: ` : "";
+          throw new Error(`${typ}${msg}`);
+        }
+        // [END]
         const delta = parsed.choices?.[0]?.delta?.content;
         if (delta) yield delta;
-      } catch {
-        // Ignore malformed SSE frames — server may emit partial JSON across chunks.
+      } catch (e) {
+        // Re-throw our own error frame; swallow JSON parse errors from partial chunks.
+        if (e instanceof Error && e.message && !e.message.startsWith("Unexpected")) throw e;
       }
     }
   }

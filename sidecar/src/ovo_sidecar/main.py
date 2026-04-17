@@ -1,9 +1,11 @@
 import asyncio
 import logging
+import traceback
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from ovo_sidecar import __version__
 from ovo_sidecar.api import ollama, openai, ovo
@@ -24,6 +26,28 @@ def create_app(api_flavor: str) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # [START] Catch-all exception handler — returns a JSONResponse via FastAPI's
+    # exception path so the response traverses CORSMiddleware on the way out and
+    # gets proper Access-Control-Allow-Origin headers. Without this, Starlette's
+    # ServerErrorMiddleware short-circuits with a bare 500 that the webview sees
+    # as a CORS violation → "TypeError: Load failed" in the UI, masking the real
+    # error. Preserves HTTPException behavior (handled separately by FastAPI).
+    @app.exception_handler(Exception)
+    async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
+        logger.exception("unhandled error on %s %s", request.method, request.url.path)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": {
+                    "type": exc.__class__.__name__,
+                    "message": str(exc) or "internal server error",
+                    # Full traceback only when debugging — stays behind log_level.
+                    "trace": traceback.format_exc() if settings.log_level.lower() == "debug" else None,
+                }
+            },
+        )
+    # [END]
 
     if api_flavor == "ollama":
         app.include_router(ollama.router)

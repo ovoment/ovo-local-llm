@@ -165,21 +165,42 @@ async def chat_completions(req: OpenAIChatRequest):
         async def event_stream():
             first = True
             final_reason = "stop"
-            async for chunk in stream_iter():
-                delta: dict[str, Any] = {"content": chunk.text}
-                if first:
-                    delta = {"role": "assistant", "content": chunk.text}
-                    first = False
-                payload = {
+            # [START] Guarded streaming — once response headers are sent (200),
+            # an exception from the generator silently aborts the connection and
+            # surfaces in the webview as "TypeError: Load failed". Catch here and
+            # emit a final OpenAI-style error frame so the UI can render it.
+            try:
+                async for chunk in stream_iter():
+                    delta: dict[str, Any] = {"content": chunk.text}
+                    if first:
+                        delta = {"role": "assistant", "content": chunk.text}
+                        first = False
+                    payload = {
+                        "id": completion_id,
+                        "object": "chat.completion.chunk",
+                        "created": created,
+                        "model": req.model,
+                        "choices": [{"index": 0, "delta": delta, "finish_reason": None}],
+                    }
+                    yield f"data: {json.dumps(payload)}\n\n"
+                    if chunk.done:
+                        final_reason = chunk.finish_reason or "stop"
+            except Exception as e:
+                logger.exception("chat stream failed")
+                err = {
                     "id": completion_id,
                     "object": "chat.completion.chunk",
                     "created": created,
                     "model": req.model,
-                    "choices": [{"index": 0, "delta": delta, "finish_reason": None}],
+                    "choices": [
+                        {"index": 0, "delta": {}, "finish_reason": "error"}
+                    ],
+                    "error": {"type": e.__class__.__name__, "message": str(e) or "stream failed"},
                 }
-                yield f"data: {json.dumps(payload)}\n\n"
-                if chunk.done:
-                    final_reason = chunk.finish_reason or "stop"
+                yield f"data: {json.dumps(err)}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+            # [END]
             end = {
                 "id": completion_id,
                 "object": "chat.completion.chunk",
