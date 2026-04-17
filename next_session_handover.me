@@ -77,15 +77,30 @@
 
 ### 1순위 — Phase 6.4 Claude 페어리티
 
-- ~~**기본 웹 검색 MCP (키 불필요)**~~ — ✅ 세션 #3에서 완료. `/ovo/websearch` (DuckDuckGo) + 내장 `web_search` 툴 카탈로그 주입. 사이드카 `duckduckgo-search` 의존성 첫 실행 시 uv가 설치.
-- **`/compact` 수동 트리거 UI** — auto-compact 엔진 재사용, 채팅 상단 슬래시 커맨드 바
-- **`.ovo/skills/`** — Claude `.claude/skills/` 대응, 폴더 스캔 → 시스템 프롬프트 카탈로그 주입
-- **`/memory` 명령** — Claude Code 대응 (`/memory add/list/remove`)
-- **Plan 모드 정교화** — 시스템 프롬프트에 "plan only, no execution" 명시
-- **MCP memory 브릿지** — `@modelcontextprotocol/server-memory`를 OVO Wiki FTS 백엔드로 연결
-- **MCP env 수정 UI** — 현재 AddServerForm 재사용으로 생성 시점은 해결. 이후 편집은 remove+re-add. 인라인 에디트 버튼 추가 필요.
-- **Reasoning 모델 플래그** — 모델 메타에 `"reasoning"` capability 추가, R1 implicit-open 시 초기 owlState 유지
-- **샘플링 파라미터 UI** — `repetition_penalty` / `temperature` / `top_p` 슬라이더 (반복 루프 가드와 별개)
+**세션 #3 말미에 착수·완료된 것 (✅)**
+- ✅ **기본 웹 검색 MCP (키 불필요)** — `/ovo/websearch` (DuckDuckGo) + 내장 `web_search` 툴
+- ✅ **샘플링 파라미터 UI** — Temperature / Top-p / Rep-penalty / Max tokens 슬라이더 + MLX logits processor
+- ✅ **설정 섹션 접기/펼치기** — `CollapsibleSection` 공용 + localStorage 기억
+- ✅ **모델 프로필** — 5개 빌트인 (자유대화/연구/코드/속도/창작) + 페르소나 + 사용자 호칭 오버라이드
+- ✅ **전역 사용자 호칭 설정** — Settings > Chat Input에 input, 프로필 호칭 없으면 fallback
+- ✅ **Wiki 계층화 (Note → Casebook → Canonical)** — DB migration 003 + FTS 가중치 + UI pill 스위처
+- ✅ **슬래시 커맨드 `/`** — 인프라 + `/clear /profile /wiki /models /settings` 작동. `/compact /memory /skills /translate`는 placeholder(menu에 표시, toast로 응답).
+- ✅ **Plan 모드 정교화** — 시스템 프롬프트에 "plan only" 명시적 문구 추가
+
+**세션 #4부터 이어갈 것 (⏳)**
+- ⏳ **`/compact` 실제 구현** — 인프라(슬래시+auto-compact 엔진) 이미 있음. 세션 메시지 수동 축약 트리거. **S 규모 — 1순위**.
+- ⏳ **`.ovo/skills/`** — 폴더 스캔 → 시스템 프롬프트 카탈로그 주입. `.claude/skills/` 파리티.
+- ⏳ **`/memory` 명령 실제 구현** — `/memory add "텍스트" #tag` → Wiki에 Note 추가. Wiki 계층 인프라 재사용.
+- ⏳ **MCP memory 브릿지** — `@modelcontextprotocol/server-memory` 서버를 OVO Wiki FTS 백엔드로 연결
+- ⏳ **벡터 임베딩 검색 (L)** — 사이드카 로컬 임베딩 모델(BGE-small/gte) + 세션·Wiki 의미 검색. FTS5 보완.
+- ⏳ **Compact 시맨틱 업그레이드 (L)** — 임베딩 유사도로 관련성 낮은 메시지만 축약. 임베딩 인프라 재사용.
+- ⏳ **음성 I/O (M)** — Whisper 전사 + Piper TTS. ⚠️ Settings에서 on/off 토글 필수, 기본 OFF.
+- ⏳ **전역 단축키 번역 (M)** — ⌘⇧T → 로컬 번역 모델 오버레이. Tauri global shortcut.
+- ⏳ **자동 모델 추천 (M)** — 프롬프트 분석 + model_perf 통계 → "이 태스크엔 X 적합" 헤더 알림
+- ⏳ **MCP env 수정 UI (S)** — 현재 AddServerForm 재사용으로 생성 시점만 해결. 이후 편집용 인라인 에디트 버튼 추가.
+- ⏳ **Reasoning 모델 플래그 (S)** — 모델 메타에 `"reasoning"` capability 추가, R1 implicit-open 시 초기 owlState 유지
+
+**세션 #4 첫 작업 권장**: `/compact` 실제 구현 (S) → `/memory` 실제 구현 (M, Wiki 재사용) → Skills (M). 세 개 다 슬래시 커맨드 인프라 + Wiki 계층 위에 얹히니 효율적.
 
 ### 2순위 — Phase 7+ 이미지 생성 MVP
 
