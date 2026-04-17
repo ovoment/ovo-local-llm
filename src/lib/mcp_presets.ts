@@ -59,6 +59,14 @@ export const MCP_PRESETS: ReadonlyArray<McpPreset> = [
     env: {},
   },
   {
+    id: "playwright",
+    name: "🎭 Playwright",
+    description: "실제 브라우저로 페이지 열기·클릭·폼 입력·스크린샷 (키 불필요, 웹 자동화/리서치 강력)",
+    command: "npx",
+    args_template: ["-y", "@playwright/mcp@latest"],
+    env: {},
+  },
+  {
     id: "brave-search",
     name: "🔍 Brave 검색",
     description: "웹 검색 (Anthropic 공식, BRAVE_API_KEY 필요)",
