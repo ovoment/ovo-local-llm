@@ -195,6 +195,7 @@ class CountMessage(BaseModel):
     role: str
     content: str
     images: list[str] | None = None
+    audios: list[str] | None = None
 
 
 class CountTokensRequest(BaseModel):
@@ -219,11 +220,16 @@ async def count_tokens(req: CountTokensRequest) -> dict[str, Any]:
     model_id = _resolve_ref_for_ovo(req.model)
     repo_id = registry.resolve(req.model)
     caps = hf_scanner.resolve_capabilities(repo_id)
-    is_vision = "vision" in caps
+    use_vlm = "vision" in caps or "audio" in caps
 
-    if is_vision:
+    if use_vlm:
         vlm_messages = [
-            VlmChatMessage(role=m.role, content=m.content, images=m.images or [])
+            VlmChatMessage(
+                role=m.role,
+                content=m.content,
+                images=m.images or [],
+                audios=m.audios or [],
+            )
             for m in req.messages
         ]
         count = await vlm_runner.count_tokens(model_id, vlm_messages)

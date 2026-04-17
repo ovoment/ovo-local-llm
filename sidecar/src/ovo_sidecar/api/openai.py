@@ -20,7 +20,7 @@ router = APIRouter(tags=["openai"])
 
 
 # [START] OpenAI content-parts — `content` may be a plain string OR a list of
-# parts mixing text and image_url. We accept both shapes and normalize downstream.
+# parts mixing text, image_url, and input_audio. We accept all shapes and normalize downstream.
 class OpenAITextPart(BaseModel):
     type: Literal["text"]
     text: str
@@ -35,7 +35,17 @@ class OpenAIImagePart(BaseModel):
     image_url: OpenAIImageUrlBody
 
 
-OpenAIContentPart = OpenAITextPart | OpenAIImagePart
+class OpenAIInputAudioBody(BaseModel):
+    data: str   # base64 payload (no data-URL prefix)
+    format: str  # "mp3" | "wav" | "m4a" | ...
+
+
+class OpenAIInputAudioPart(BaseModel):
+    type: Literal["input_audio"]
+    input_audio: OpenAIInputAudioBody
+
+
+OpenAIContentPart = OpenAITextPart | OpenAIImagePart | OpenAIInputAudioPart
 
 
 class OpenAIMessage(BaseModel):
@@ -43,17 +53,28 @@ class OpenAIMessage(BaseModel):
     content: str | list[OpenAIContentPart]
 
 
-def _split_content(content: str | list[OpenAIContentPart]) -> tuple[str, list[str]]:
+def _split_content(
+    content: str | list[OpenAIContentPart],
+) -> tuple[str, list[str], list[str]]:
+    """Return (text, images, audios) from a content value.
+
+    images: list of data URLs or http(s) URLs.
+    audios: list of data URLs in the form data:audio/{fmt};base64,{payload}.
+    """
     if isinstance(content, str):
-        return content, []
+        return content, [], []
     text_parts: list[str] = []
     images: list[str] = []
+    audios: list[str] = []
     for p in content:
         if isinstance(p, OpenAITextPart):
             text_parts.append(p.text)
-        else:
+        elif isinstance(p, OpenAIImagePart):
             images.append(p.image_url.url)
-    return "\n".join(text_parts), images
+        elif isinstance(p, OpenAIInputAudioPart):
+            fmt = p.input_audio.format
+            audios.append(f"data:audio/{fmt};base64,{p.input_audio.data}")
+    return "\n".join(text_parts), images, audios
 # [END]
 
 
@@ -116,31 +137,46 @@ async def chat_completions(req: OpenAIChatRequest):
     completion_id = f"chatcmpl-{uuid.uuid4().hex[:24]}"
     created = int(time.time())
 
-    # [START] Capability-based routing: vision-capable models go through mlx-vlm
-    # which handles both text-only and image-bearing turns; text-only models
-    # reject images to surface the mismatch loudly instead of silently dropping.
+    # [START] Capability-based routing: vision- or audio-capable models go through
+    # mlx-vlm which handles multimodal turns; text-only models reject attachments
+    # to surface the mismatch loudly instead of silently dropping.
     repo_id = registry.resolve(req.model)
     caps = hf_scanner.resolve_capabilities(repo_id)
     is_vision = "vision" in caps
+    is_audio = "audio" in caps
+    use_vlm = is_vision or is_audio
 
-    normalized: list[tuple[str, str, list[str]]] = []
+    normalized: list[tuple[str, str, list[str], list[str]]] = []
     for m in req.messages:
-        text, images = _split_content(m.content)
-        normalized.append((m.role, text, images))
+        text, images, audios = _split_content(m.content)
+        normalized.append((m.role, text, images, audios))
 
-    has_any_images = any(imgs for _, _, imgs in normalized)
+    has_any_images = any(imgs for _, _, imgs, _ in normalized)
+    has_any_audios = any(auds for _, _, _, auds in normalized)
+
     if has_any_images and not is_vision:
         raise HTTPException(
             status_code=400,
             detail=(
-                f"model {req.model} is text-only; attach-capable models must declare "
-                f"the 'vision' capability (e.g. Qwen2-VL, LLaVA, Gemma3)."
+                f"model {req.model} does not support images; vision-capable models "
+                f"must declare the 'vision' capability (e.g. Qwen2-VL, LLaVA, Gemma3)."
+            ),
+        )
+    if has_any_audios and not is_audio:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"model {req.model} does not support audio; audio-capable models "
+                f"must declare the 'audio' capability (e.g. Phi-4-multimodal, Qwen2-Audio)."
             ),
         )
     # [END]
 
-    if is_vision:
-        vlm_messages = [VlmChatMessage(role=r, content=t, images=imgs) for r, t, imgs in normalized]
+    if use_vlm:
+        vlm_messages = [
+            VlmChatMessage(role=r, content=t, images=imgs, audios=auds)
+            for r, t, imgs, auds in normalized
+        ]
 
         def _vlm_stream():
             return vlm_runner.stream_chat(
@@ -153,7 +189,7 @@ async def chat_completions(req: OpenAIChatRequest):
 
         stream_iter = _vlm_stream
     else:
-        text_messages = [ChatMessage(role=r, content=t) for r, t, _ in normalized]
+        text_messages = [ChatMessage(role=r, content=t) for r, t, _, _ in normalized]
 
         def _text_stream():
             return runner.stream_chat(

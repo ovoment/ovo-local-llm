@@ -172,9 +172,21 @@ pub fn spawn(app: AppHandle) {
 
 pub fn kill(app: &AppHandle) {
     if let Some(state) = app.try_state::<SidecarState>() {
+        let ports = state.snapshot().ports;
         if let Some(child) = state.child.lock().unwrap().take() {
             let _ = child.kill();
         }
+        // [START] Port-level cleanup — uvicorn spawns 3 worker tasks inside a
+        // single Python asyncio loop. If one task crashes uncaught (e.g. the
+        // MLX worker thread fault we've hit before) the other two keep running
+        // and continue to hold their ports. child.kill() only signals the
+        // parent process it originally spawned; orphaned children keep the
+        // ports bound. `lsof -ti:<port> | xargs kill -9` guarantees a clean
+        // slate before the next spawn.
+        for p in [ports.ollama, ports.openai, ports.native] {
+            kill_port(p);
+        }
+        // [END]
         update_status(app, |s| {
             s.health = SidecarHealth::Stopped;
             s.pid = None;
@@ -186,9 +198,43 @@ pub fn kill(app: &AppHandle) {
 
 pub async fn restart(app: AppHandle) {
     kill(&app);
-    tokio::time::sleep(Duration::from_millis(400)).await;
+    // 800ms gives the OS time to release the freed ports before rebinding.
+    tokio::time::sleep(Duration::from_millis(800)).await;
     spawn(app);
 }
+
+// [START] kill_port — macOS helper. Uses lsof + kill -9 shelled out via
+// std::process so we don't introduce a nix / libc dependency. Errors are
+// swallowed (best-effort cleanup).
+fn kill_port(port: u16) {
+    use std::process::{Command, Stdio};
+
+    let output = match Command::new("/usr/sbin/lsof")
+        .args(["-ti", &format!(":{port}")])
+        .stderr(Stdio::null())
+        .output()
+    {
+        Ok(o) => o,
+        Err(e) => {
+            log::warn!("lsof for port {port} failed: {e}");
+            return;
+        }
+    };
+    if !output.status.success() {
+        return; // no process holds the port
+    }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for pid_str in stdout.split_whitespace() {
+        let Ok(pid) = pid_str.parse::<u32>() else { continue };
+        let _ = Command::new("/bin/kill")
+            .args(["-9", &pid.to_string()])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+        log::info!("killed orphaned sidecar process pid={pid} on port {port}");
+    }
+}
+// [END]
 
 fn update_status<F: FnOnce(&mut SidecarStatus)>(app: &AppHandle, f: F) {
     let Some(state) = app.try_state::<SidecarState>() else { return };

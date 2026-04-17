@@ -26,6 +26,7 @@ class VlmChatMessage:
     role: str
     content: str
     images: list[str] = field(default_factory=list)
+    audios: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -55,6 +56,41 @@ def _decode_image(src: str):
 # [END]
 
 
+# [START] Audio source resolution — mlx-vlm stream_generate accepts file paths.
+# Data URLs (`data:audio/mpeg;base64,...`) are written to a temp file so
+# mlx-vlm's miniaudio-based decoder can read them by path.
+def _decode_audio(src: str) -> str:
+    """Return a filesystem path mlx-vlm can open.
+
+    For data URLs: decode base64 payload, write to a NamedTemporaryFile (not
+    auto-deleted so the path stays valid until the caller is done), and return
+    the path string.  The caller is responsible for cleanup if needed; since
+    audio inference is a one-shot request the OS will reclaim the file after
+    the process exits.
+    """
+    if not src.startswith("data:"):
+        return src
+    header, _, b64 = src.partition(",")
+    # header looks like "data:audio/mpeg;base64"
+    mime = header[5:].split(";")[0]  # e.g. "audio/mpeg"
+    subtype = mime.split("/")[-1] if "/" in mime else "bin"
+    # Normalise common MIME subtypes to recognised extensions
+    ext_map = {"mpeg": "mp3", "x-m4a": "m4a", "mp4": "m4a"}
+    ext = ext_map.get(subtype, subtype)
+    try:
+        data = base64.b64decode(b64, validate=False)
+    except (binascii.Error, ValueError) as e:
+        raise ValueError(f"invalid audio data URL: {e}") from e
+    import tempfile
+
+    tmp = tempfile.NamedTemporaryFile(suffix=f".{ext}", delete=False)
+    tmp.write(data)
+    tmp.flush()
+    tmp.close()
+    return tmp.name
+# [END]
+
+
 class MlxVlmRunner:
     """Thread-safe wrapper around mlx-vlm load + stream_generate.
 
@@ -65,12 +101,28 @@ class MlxVlmRunner:
     def __init__(self) -> None:
         self._loaded: LoadedVlmModel | None = None
         self._load_lock = asyncio.Lock()
+        # [START] Track in-flight worker for preemptive cancel on model swap.
+        self._active_cancel: threading.Event | None = None
+        self._active_thread: threading.Thread | None = None
+        # [END]
         from ovo_sidecar import model_lifecycle
 
         model_lifecycle.register_unloader(self.unload)
 
     def unload(self) -> None:
-        """Drop cached VLM model + force Metal cache release."""
+        """Drop cached VLM model + force Metal cache release.
+
+        Signals + joins the active worker so the old model reference is
+        released from thread-local scope before Metal cache is cleared.
+        """
+        # [START] Preemptive worker cancel — mirrors mlx_runner pattern.
+        if self._active_cancel is not None:
+            self._active_cancel.set()
+        if self._active_thread is not None and self._active_thread.is_alive():
+            self._active_thread.join(timeout=2.0)
+        self._active_cancel = None
+        self._active_thread = None
+        # [END]
         if self._loaded is None:
             return
         from ovo_sidecar import model_lifecycle
@@ -124,11 +176,18 @@ class MlxVlmRunner:
     ) -> AsyncIterator[GenerationChunk]:
         loaded = await self.ensure_loaded(model_ref)
 
-        # Flatten images across all turns; apply_chat_template only needs num_images.
+        # [START] Flatten images and audios across all turns.
+        # apply_chat_template needs the counts; stream_generate needs the decoded values.
         images: list = []
         for m in messages:
             for src in m.images:
                 images.append(_decode_image(src))
+
+        audios: list[str] = []
+        for m in messages:
+            for src in m.audios:
+                audios.append(_decode_audio(src))
+        # [END]
 
         from mlx_vlm.prompt_utils import apply_chat_template
 
@@ -138,15 +197,15 @@ class MlxVlmRunner:
             loaded.config,
             flat_msgs,
             num_images=len(images),
+            num_audios=len(audios),
         )
 
-        async for chunk in self._astream(loaded, formatted, images, max_tokens, temperature, top_p):
+        async for chunk in self._astream(loaded, formatted, images, audios, max_tokens, temperature, top_p):
             yield chunk
 
     # [START] Token counting — VLMs format the prompt with apply_chat_template
-    # that injects image placeholders; count AFTER formatting so the number
-    # reflects what the model actually sees. Images themselves add separate
-    # vision-token budget that the processor handles internally.
+    # that injects image/audio placeholders; count AFTER formatting so the number
+    # reflects what the model actually sees.
     async def count_tokens(
         self,
         model_ref: str | Path,
@@ -157,11 +216,13 @@ class MlxVlmRunner:
 
         flat_msgs = [{"role": m.role, "content": m.content} for m in messages]
         num_images = sum(len(m.images) for m in messages)
+        num_audios = sum(len(m.audios) for m in messages)
         formatted = apply_chat_template(
             loaded.processor,
             loaded.config,
             flat_msgs,
             num_images=num_images,
+            num_audios=num_audios,
         )
         # processors expose `tokenizer` attr; fall back to processor.encode
         tokenizer = getattr(loaded.processor, "tokenizer", None) or loaded.processor
@@ -180,6 +241,7 @@ class MlxVlmRunner:
         loaded: LoadedVlmModel,
         prompt: str,
         images: list,
+        audios: list[str],
         max_tokens: int,
         temperature: float | None,
         top_p: float | None,
@@ -209,6 +271,10 @@ class MlxVlmRunner:
                     kwargs["temperature"] = float(temperature)
                 if top_p is not None:
                     kwargs["top_p"] = float(top_p)
+                # [START] Pass audio paths when present; stream_generate kwarg is `audio`
+                if audios:
+                    kwargs["audio"] = audios if len(audios) > 1 else audios[0]
+                # [END]
 
                 for chunk in stream_generate(
                     loaded.model, loaded.processor, prompt, images, **kwargs
@@ -232,7 +298,12 @@ class MlxVlmRunner:
             finally:
                 safe_put(None)
 
-        threading.Thread(target=worker, daemon=True, name="mlx-vlm-stream").start()
+        # [START] Expose worker handles on self for preemptive cancel on swap.
+        worker_thread = threading.Thread(target=worker, daemon=True, name="mlx-vlm-stream")
+        self._active_cancel = cancelled
+        self._active_thread = worker_thread
+        worker_thread.start()
+        # [END]
 
         try:
             while True:
@@ -244,6 +315,9 @@ class MlxVlmRunner:
                 yield item
         finally:
             cancelled.set()
+            if self._active_cancel is cancelled:
+                self._active_cancel = None
+                self._active_thread = None
         # [END]
 
 

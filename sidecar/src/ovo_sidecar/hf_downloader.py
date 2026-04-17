@@ -43,15 +43,17 @@ class HfDownloader:
         api = HfApi()
 
         def _call() -> list[SearchResult]:
+            # [START] HF API compat — `direction` was removed; newer versions
+            # default to descending on numeric sort fields (downloads, likes).
             models = api.list_models(
                 search=query or None,
                 filter="mlx",
                 limit=limit,
                 sort="downloads",
-                direction=-1,
                 cardData=False,
                 full=False,
             )
+            # [END]
             return [
                 SearchResult(
                     repo_id=m.id,

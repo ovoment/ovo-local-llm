@@ -142,12 +142,30 @@ class MlxRunner:
     def __init__(self) -> None:
         self._loaded: LoadedModel | None = None
         self._load_lock = asyncio.Lock()
+        # [START] Track the in-flight worker so unload() can signal it to exit
+        # before a model swap — prevents zombie threads holding the old model.
+        self._active_cancel: threading.Event | None = None
+        self._active_thread: threading.Thread | None = None
+        # [END]
         from ovo_sidecar import model_lifecycle
 
         model_lifecycle.register_unloader(self.unload)
 
     def unload(self) -> None:
-        """Drop cached model + force Metal cache release."""
+        """Drop cached model + force Metal cache release.
+
+        Signals the active worker (if any) and waits briefly so the thread
+        releases its reference to the old weights before Metal cache clears.
+        """
+        # [START] Cancel + join active worker BEFORE dropping the reference so
+        # Python GC can actually reclaim the old model on Metal.
+        if self._active_cancel is not None:
+            self._active_cancel.set()
+        if self._active_thread is not None and self._active_thread.is_alive():
+            self._active_thread.join(timeout=2.0)
+        self._active_cancel = None
+        self._active_thread = None
+        # [END]
         if self._loaded is None:
             return
         from ovo_sidecar import model_lifecycle
@@ -316,7 +334,13 @@ class MlxRunner:
                 safe_put(None)
         # [END]
 
-        threading.Thread(target=worker, daemon=True, name="mlx-stream").start()
+        # [START] Expose worker state on self so unload() can preempt it when
+        # a model swap is requested mid-stream.
+        worker_thread = threading.Thread(target=worker, daemon=True, name="mlx-stream")
+        self._active_cancel = cancelled
+        self._active_thread = worker_thread
+        worker_thread.start()
+        # [END]
 
         # [START] Signal worker to stop if consumer is cancelled (client disconnect).
         try:
@@ -329,6 +353,11 @@ class MlxRunner:
                 yield item
         finally:
             cancelled.set()
+            # Clear active handles once the worker has drained; unload() will
+            # no-op the join path when these are already None.
+            if self._active_cancel is cancelled:
+                self._active_cancel = None
+                self._active_thread = None
         # [END]
 
 
