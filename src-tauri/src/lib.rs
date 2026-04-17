@@ -1,9 +1,23 @@
 use serde::Serialize;
 use tauri::{AppHandle, Manager, RunEvent};
+use tauri_plugin_sql::{Migration, MigrationKind};
 
 mod sidecar;
 
 use sidecar::{SidecarState, SidecarStatus};
+
+// [START] Phase R — chats.sqlite migrations registered via tauri-plugin-sql.
+// The DB lives in the Tauri app data dir ($APPDATA/com.ovoment.ovo/chats.sqlite)
+// and is owned by the frontend (sessions/messages/model_context_overrides).
+fn chats_migrations() -> Vec<Migration> {
+    vec![Migration {
+        version: 1,
+        description: "init: sessions + messages + model_context_overrides",
+        sql: include_str!("../migrations/001_init.sql"),
+        kind: MigrationKind::Up,
+    }]
+}
+// [END]
 
 #[derive(Serialize)]
 struct AppInfo {
@@ -34,7 +48,11 @@ async fn sidecar_restart(app: AppHandle) -> Result<(), String> {
 pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_sql::Builder::default().build())
+        .plugin(
+            tauri_plugin_sql::Builder::default()
+                .add_migrations("sqlite:chats.sqlite", chats_migrations())
+                .build(),
+        )
         .setup(|app| {
             sidecar::setup(&app.handle().clone());
             Ok(())
