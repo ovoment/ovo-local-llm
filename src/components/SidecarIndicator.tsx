@@ -33,7 +33,11 @@ export function SidecarIndicator() {
         className="ml-auto text-[11px] px-2 py-1 rounded bg-ovo-accent text-ovo-accent-ink hover:bg-ovo-accent-hover transition disabled:opacity-50"
         disabled={status.health === "starting"}
       >
-        {status.health === "starting" ? t("sidecar.restarting") : t("sidecar.restart")}
+        {status.health === "starting"
+          ? t("sidecar.restarting")
+          : status.health === "stopped"
+            ? t("sidecar.start")
+            : t("sidecar.restart")}
       </button>
     </div>
   );

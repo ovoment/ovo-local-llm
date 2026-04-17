@@ -2,13 +2,10 @@ import { useEffect, useState } from "react";
 import { emit, listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { Sidebar, type NavKey } from "./Sidebar";
-import { Trash2 } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { useSessionsStore } from "../store/sessions";
-import { SidecarIndicator } from "./SidecarIndicator";
-import { ContextIndicator } from "./ContextIndicator";
 import { ToastStack } from "./Toast";
 import { ChatPane } from "../panes/ChatPane";
+import { CodePane } from "../panes/CodePane";
+import { ImagePane } from "../panes/ImagePane";
 import { ModelsPane } from "../panes/ModelsPane";
 import { SettingsPane } from "../panes/SettingsPane";
 import { AboutPane } from "../panes/AboutPane";
@@ -31,16 +28,15 @@ import type { ChatAttachment } from "../types/ovo";
 // [START] Phase 6.1 — project context bootstrap
 import { useProjectContextStore } from "../store/project_context";
 // [END]
+// [START] Phase 6.2b — MCP store bootstrap
+import { useMcpStore } from "../store/mcp";
+// [END]
+// [START] Phase 6.2c — tool-call approval mode bootstrap
+import { useToolModeStore } from "../store/tool_mode";
+// [END]
 
 export function AppShell() {
-  const { t } = useTranslation();
   const [active, setActive] = useState<NavKey>("chat");
-  // [START] Clear-conversation button — moved from the ChatPane header to the
-  // footer's leftmost slot so the header can keep the ModelSelector centered.
-  const sessionsMessageCount = useSessionsStore((s) => s.messages.length);
-  const clearCurrentMessages = useSessionsStore((s) => s.clearCurrentMessages);
-  const hasMessages = sessionsMessageCount > 0;
-  // [END]
   const subscribe = useSidecarStore((s) => s.subscribe);
   const unsubscribe = useSidecarStore((s) => s.unsubscribe);
   const owlState = useChatStore((s) => s.owlState);
@@ -61,6 +57,12 @@ export function AppShell() {
     if (useProjectContextStore.getState().project_path) {
       void useProjectContextStore.getState().rescan();
     }
+    // [END]
+    // [START] Phase 6.2b — MCP store bootstrap: hydrate configs from localStorage
+    useMcpStore.getState().load();
+    // [END]
+    // [START] Phase 6.2c — tool-call approval mode bootstrap
+    useToolModeStore.getState().load();
     // [END]
   }, []);
   // [END]
@@ -126,8 +128,25 @@ export function AppShell() {
   // [END]
 
   useEffect(() => {
-    void subscribe();
-    return () => unsubscribe();
+    let autostartTimer: ReturnType<typeof setTimeout> | null = null;
+    void (async () => {
+      await subscribe();
+      // [START] auto-start fallback — if the native spawn didn't transition
+      // past "stopped" within 2s (bundle path missing, port conflict, etc.),
+      // kick a restart from the frontend so the user sees the sidecar come up
+      // without needing to touch the 💾 button.
+      autostartTimer = setTimeout(() => {
+        const s = useSidecarStore.getState().status;
+        if (s.health === "stopped") {
+          void useSidecarStore.getState().restart();
+        }
+      }, 2000);
+      // [END]
+    })();
+    return () => {
+      if (autostartTimer) clearTimeout(autostartTimer);
+      unsubscribe();
+    };
   }, [subscribe, unsubscribe]);
 
   return (
@@ -137,31 +156,12 @@ export function AppShell() {
       <main className="flex-1 flex flex-col min-w-0">
         <div className="flex-1 overflow-hidden">
           {active === "chat" && <ChatPane />}
+          {active === "code" && <CodePane />}
+          {active === "image" && <ImagePane />}
           {active === "models" && <ModelsPane />}
           {active === "settings" && <SettingsPane />}
           {active === "about" && <AboutPane />}
         </div>
-        <footer className="border-t border-ovo-border p-3 flex items-center gap-3">
-          <SidecarIndicator />
-          {/* [START] vertical divider + ContextIndicator (R.4) */}
-          <div className="w-px self-stretch bg-ovo-border" aria-hidden="true" />
-          <ContextIndicator />
-          {/* [END] */}
-          {/* [START] Clear-conversation — pushed to far right via ml-auto, only
-              visible when chat tab is active and the current session has messages. */}
-          {active === "chat" && hasMessages && (
-            <button
-              type="button"
-              onClick={() => void clearCurrentMessages()}
-              className="ml-auto p-1.5 rounded-md text-ovo-muted hover:bg-ovo-surface-solid/60 transition"
-              aria-label={t("chat.clear")}
-              title={t("chat.clear")}
-            >
-              <Trash2 className="w-4 h-4" aria-hidden />
-            </button>
-          )}
-          {/* [END] */}
-        </footer>
       </main>
     </div>
   );

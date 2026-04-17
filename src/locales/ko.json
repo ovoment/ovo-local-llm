@@ -6,6 +6,7 @@
   "nav": {
     "chat": "채팅",
     "code": "코드",
+    "image": "이미지",
     "models": "모델",
     "settings": "설정",
     "about": "정보"
@@ -13,6 +14,10 @@
   "code": {
     "title": "코드",
     "coming_soon": "IDE 모드 — Phase 6에서 CLAUDE.md / AGENTS.md 기반 코드 작업 환경이 여기 붙어"
+  },
+  "image": {
+    "title": "이미지 생성",
+    "coming_soon": "이미지 생성 — Phase 7+에서 MLX 디퓨전(SDXL / Flux) 모델로 로컬 이미지 생성이 여기 붙어"
   },
   "sidecar": {
     "status": {
@@ -23,6 +28,12 @@
     },
     "restart": "사이드카 재시작",
     "restarting": "재시작 중…",
+    "start": "사이드카 시작",
+    "banner": {
+      "stopped": "사이드카가 꺼져 있어. 왼쪽 아래 💾 버튼을 눌러 시작해줘",
+      "failed": "사이드카 시작에 실패했어. 💾 버튼으로 다시 시도해",
+      "starting": "사이드카를 시작하고 있어…"
+    },
     "ports": {
       "ollama": "Ollama",
       "openai": "OpenAI",

@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { MessageSquare, Package, Settings, Info } from "lucide-react";
+import { MessageSquare, Code2, Image as ImageIcon, Package, Settings, Info } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { RecentsPanel } from "./RecentsPanel";
 import { useThemeStore } from "../store/theme";
 
-export type NavKey = "chat" | "models" | "settings" | "about";
+export type NavKey = "chat" | "code" | "image" | "models" | "settings" | "about";
 
 interface NavItem {
   key: NavKey;
@@ -13,10 +13,18 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { key: "chat", icon: MessageSquare },
+  { key: "code", icon: Code2 },
+  { key: "image", icon: ImageIcon },
+];
+
+// [START] Secondary bottom-dock items — models/settings/info rendered as
+// small icon-only buttons at the bottom center of the sidebar (no labels).
+const BOTTOM_ITEMS: NavItem[] = [
   { key: "models", icon: Package },
   { key: "settings", icon: Settings },
   { key: "about", icon: Info },
 ];
+// [END]
 
 interface SidebarProps {
   active: NavKey;
@@ -50,7 +58,7 @@ export function Sidebar({ active, onSelect }: SidebarProps) {
         />
         <div
           data-tauri-drag-region
-          className="text-[11px] text-ovo-muted mt-0.5"
+          className="text-[11px] text-ovo-muted mt-2"
         >
           {t("app.tagline")}
         </div>
@@ -79,6 +87,30 @@ export function Sidebar({ active, onSelect }: SidebarProps) {
       {/* [START] Recents panel — only visible when chat tab is active */}
       <div className="flex-1 overflow-y-auto min-h-0">
         {active === "chat" && <RecentsPanel />}
+      </div>
+      {/* [END] */}
+
+      {/* [START] Bottom dock — settings + info as small centered icon buttons */}
+      <div className="flex items-center justify-center gap-4 py-3 border-t border-ovo-border">
+        {BOTTOM_ITEMS.map(({ key, icon: Icon }) => {
+          const isActive = key === active;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onSelect(key)}
+              title={t(`nav.${key}`)}
+              aria-label={t(`nav.${key}`)}
+              className={`p-1.5 rounded-md transition ${
+                isActive
+                  ? "text-ovo-accent bg-ovo-nav-active"
+                  : "text-ovo-muted hover:bg-ovo-nav-active-hover hover:text-ovo-text"
+              }`}
+            >
+              <Icon className="w-4 h-4" aria-hidden />
+            </button>
+          );
+        })}
       </div>
       {/* [END] */}
     </nav>

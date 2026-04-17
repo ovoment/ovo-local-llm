@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Send, Square, Plus, Upload, Link as LinkIcon } from "lucide-react";
 import type { ChatAttachment, ModelCapability } from "../types/ovo";
@@ -16,7 +16,16 @@ interface Props {
   // [START] Phase B — model capabilities gate attach accept types
   modelCapabilities?: ModelCapability[];
   // [END]
+  // [START] left slot — optional button rendered before the attach (+) button, inside the same card row
+  leftSlot?: ReactNode;
+  // [END]
 }
+
+// [START] imperative handle — lets parent (ChatPane) push files dropped onto the pane
+export interface ChatInputHandle {
+  addFiles: (files: File[]) => void;
+}
+// [END]
 
 function readImagePreview(file: File): Promise<string | null> {
   if (!file.type.startsWith("image/")) return Promise.resolve(null);
@@ -33,7 +42,10 @@ function genId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function ChatInput({ onSend, onStop, streaming, disabled, allowTypeDuringStreaming = false, queueCount = 0, modelCapabilities = [] }: Props) {
+export const ChatInput = forwardRef<ChatInputHandle, Props>(function ChatInput(
+  { onSend, onStop, streaming, disabled, allowTypeDuringStreaming = false, queueCount = 0, modelCapabilities = [], leftSlot },
+  ref,
+) {
   const { t } = useTranslation();
   const [value, setValue] = useState("");
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -100,9 +112,8 @@ export function ChatInput({ onSend, onStop, streaming, disabled, allowTypeDuring
     fileInputRef.current?.click();
   };
 
-  const onFilesSelected = async (e: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    e.target.value = "";
+  // [START] shared attach routine — used by both file picker and external (drag-drop) callers
+  const appendFiles = async (files: File[]) => {
     if (files.length === 0) return;
     const next: ChatAttachment[] = await Promise.all(
       files.map(async (file) => ({
@@ -114,6 +125,17 @@ export function ChatInput({ onSend, onStop, streaming, disabled, allowTypeDuring
     );
     setAttachments((prev) => [...prev, ...next]);
   };
+  // [END]
+
+  const onFilesSelected = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    await appendFiles(files);
+  };
+
+  // [START] expose addFiles to parent (ChatPane drop zone)
+  useImperativeHandle(ref, () => ({ addFiles: (files) => void appendFiles(files) }), []);
+  // [END]
 
   const onConfirmUrl = () => {
     const url = urlValue.trim();
@@ -160,6 +182,7 @@ export function ChatInput({ onSend, onStop, streaming, disabled, allowTypeDuring
         </div>
       )}
       <div className="flex items-end gap-2">
+        {leftSlot}
         <div ref={menuRef} className="relative shrink-0">
           <button
             type="button"
@@ -256,4 +279,4 @@ export function ChatInput({ onSend, onStop, streaming, disabled, allowTypeDuring
       </div>
     </div>
   );
-}
+});

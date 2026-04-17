@@ -6,6 +6,7 @@
   "nav": {
     "chat": "Chat",
     "code": "Code",
+    "image": "Image",
     "models": "Models",
     "settings": "Settings",
     "about": "About"
@@ -13,6 +14,10 @@
   "code": {
     "title": "Code",
     "coming_soon": "IDE mode — CLAUDE.md / AGENTS.md driven coding workspace lands here in Phase 6"
+  },
+  "image": {
+    "title": "Image generation",
+    "coming_soon": "Image generation — MLX diffusion (SDXL / Flux) for local image synthesis lands here in Phase 7+"
   },
   "sidecar": {
     "status": {
@@ -23,6 +28,12 @@
     },
     "restart": "Restart sidecar",
     "restarting": "Restarting…",
+    "start": "Start sidecar",
+    "banner": {
+      "stopped": "Sidecar is off. Click the 💾 button on the bottom-left to start it",
+      "failed": "Sidecar failed to start. Try again with the 💾 button",
+      "starting": "Starting the sidecar…"
+    },
     "ports": {
       "ollama": "Ollama",
       "openai": "OpenAI",
