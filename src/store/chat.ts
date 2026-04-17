@@ -14,6 +14,9 @@ import { useChatSettingsStore } from "./chat_settings";
 // [START] Phase 6.1 — project context store for transient system prompt injection
 import { useProjectContextStore } from "./project_context";
 // [END]
+// [START] Phase 6.3 — wiki retrieval for system prompt injection
+import { searchWikiPages } from "../db/wiki";
+// [END]
 // [START] model_perf — import performance tracking store
 import { useModelPerfStore } from "./model_perf";
 // [END]
@@ -361,6 +364,53 @@ export const useChatStore = create<ChatStoreState>((set, get) => {
         } else {
           wire.unshift({ role: "system", content: toolsPrompt });
         }
+      }
+      // [END]
+
+      // [START] Phase 6.3 — wiki retrieval: FTS-match the latest user message
+      // against the local wiki and inject top-N pages as part of the system
+      // prompt. Budget-capped at ~4000 chars total to keep prompt tokens
+      // reasonable; callers hitting the limit see a trimmed message block.
+      try {
+        const lastUser = [...liveMessages].reverse().find((m) => m.role === "user");
+        if (lastUser) {
+          const userText = typeof lastUser.content === "string"
+            ? lastUser.content
+            : String(lastUser.content ?? "");
+          const query = userText.slice(0, 200);
+          if (query.trim()) {
+            const pages = await searchWikiPages(query, 3);
+            if (pages.length > 0) {
+              const WIKI_BUDGET = 4000;
+              let used = 0;
+              const sections: string[] = [];
+              for (const p of pages) {
+                const header = `### ${p.title}\n`;
+                const remaining = WIKI_BUDGET - used - header.length;
+                if (remaining <= 0) break;
+                const body = p.content.length > remaining
+                  ? `${p.content.slice(0, remaining)}…`
+                  : p.content;
+                sections.push(`${header}${body}`);
+                used += header.length + body.length;
+              }
+              if (sections.length > 0) {
+                const wikiPrompt =
+                  `<project_wiki>\n${sections.join("\n\n---\n\n")}\n</project_wiki>`;
+                if (wire.length > 0 && wire[0].role === "system") {
+                  wire[0] = {
+                    role: "system",
+                    content: `${wire[0].content as string}\n\n---\n\n${wikiPrompt}`,
+                  };
+                } else {
+                  wire.unshift({ role: "system", content: wikiPrompt });
+                }
+              }
+            }
+          }
+        }
+      } catch {
+        /* FTS miss → skip silently, retrieval is best-effort */
       }
       // [END]
 
