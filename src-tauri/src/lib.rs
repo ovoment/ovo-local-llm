@@ -2,8 +2,10 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager, RunEvent};
 use tauri_plugin_sql::{Migration, MigrationKind};
 
+mod mcp;
 mod sidecar;
 
+use mcp::McpState;
 use sidecar::{SidecarState, SidecarStatus};
 
 // [START] Phase R — chats.sqlite migrations registered via tauri-plugin-sql.
@@ -88,6 +90,79 @@ fn read_md_file(path: String) -> Result<MdFileResult, String> {
     };
 
     Ok(MdFileResult { name, content, size_bytes })
+}
+// [END]
+
+// [START] Phase 6.1b — read_md_dir: list all *.md / *.markdown files in a
+// folder (non-recursive) and return their contents. Lets users add a whole
+// folder of notes as project context in one click.
+#[derive(Serialize)]
+struct MdDirFile {
+    name: String,
+    path: String,
+    content: String,
+    size_bytes: u64,
+}
+
+#[derive(Serialize)]
+struct MdDirResult {
+    files: Vec<MdDirFile>,
+}
+
+#[tauri::command]
+fn read_md_dir(path: String) -> Result<MdDirResult, String> {
+    use std::fs;
+    use std::path::Path;
+
+    let p = Path::new(&path);
+    if !p.is_dir() {
+        return Err(format!("not a directory: {path}"));
+    }
+
+    let mut files: Vec<MdDirFile> = Vec::new();
+    let entries = fs::read_dir(p).map_err(|e| format!("readdir {path}: {e}"))?;
+    for entry in entries.flatten() {
+        let entry_path = entry.path();
+        if !entry_path.is_file() {
+            continue;
+        }
+        let ext = entry_path
+            .extension()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_ascii_lowercase());
+        if !matches!(ext.as_deref(), Some("md") | Some("markdown")) {
+            continue;
+        }
+        let name = entry_path
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        let meta = match fs::metadata(&entry_path) {
+            Ok(m) => m,
+            Err(_) => continue,
+        };
+        let size_bytes = meta.len();
+        let content = if size_bytes > CONTEXT_MAX_BYTES {
+            match fs::read(&entry_path) {
+                Ok(bytes) => String::from_utf8_lossy(&bytes[..CONTEXT_MAX_BYTES as usize])
+                    .into_owned(),
+                Err(_) => continue,
+            }
+        } else {
+            match fs::read_to_string(&entry_path) {
+                Ok(s) => s,
+                Err(_) => continue,
+            }
+        };
+        files.push(MdDirFile {
+            name,
+            path: entry_path.to_string_lossy().into_owned(),
+            content,
+            size_bytes,
+        });
+    }
+    files.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(MdDirResult { files })
 }
 // [END]
 
@@ -182,6 +257,7 @@ pub fn run() {
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_sql::Builder::default()
                 .add_migrations("sqlite:chats.sqlite", chats_migrations())
@@ -189,6 +265,9 @@ pub fn run() {
         )
         .setup(|app| {
             sidecar::setup(&app.handle().clone());
+            // [START] Phase 6.2a — MCP state registration
+            app.manage(McpState::new());
+            // [END]
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -200,7 +279,14 @@ pub fn run() {
             focus_main_window,
             read_project_context,
             default_project_path,
-            read_md_file
+            read_md_file,
+            read_md_dir,
+            // [START] Phase 6.2a — MCP commands
+            mcp::mcp_start,
+            mcp::mcp_call,
+            mcp::mcp_stop,
+            mcp::mcp_list
+            // [END]
         ])
         .build(tauri::generate_context!())
         .expect("error while building OVO");
