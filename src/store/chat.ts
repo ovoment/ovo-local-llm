@@ -11,6 +11,9 @@ import { useSessionsStore } from "./sessions";
 import { updateMessageContent } from "../db/sessions";
 import { maybeAutoCompact } from "../lib/compact";
 import { useChatSettingsStore } from "./chat_settings";
+// [START] Phase 6.1 — project context store for transient system prompt injection
+import { useProjectContextStore } from "./project_context";
+// [END]
 // [START] model_perf — import performance tracking store
 import { useModelPerfStore } from "./model_perf";
 // [END]
@@ -265,6 +268,20 @@ export const useChatStore = create<ChatStoreState>((set, get) => {
         .getState()
         .messages.filter((m) => m.id !== assistant.id);
       const wire = await Promise.all(liveMessages.map(messageToWire));
+
+      // [START] Phase 6.1 — prepend project context as transient system message.
+      // NOT persisted to DB — injected only at wire-build time.
+      const effectiveContextPrompt = useProjectContextStore.getState().getEffectivePrompt();
+      if (effectiveContextPrompt) {
+        const sessions2 = useSessionsStore.getState();
+        const sess = sessions2.sessions.find((s) => s.id === sessionId);
+        const sessionSystemPrompt = sess?.system_prompt ?? null;
+        const combinedSystem = sessionSystemPrompt
+          ? `${effectiveContextPrompt}\n\n${sessionSystemPrompt}`
+          : effectiveContextPrompt;
+        wire.unshift({ role: "system", content: combinedSystem });
+      }
+      // [END]
 
       let finalUsage: {
         prompt_tokens: number;

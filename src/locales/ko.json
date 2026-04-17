@@ -130,6 +130,23 @@
       "guide_zed": "Zed: settings.json → language_models.openai.api_url = http://localhost:11436/v1",
       "guide_generic": "OpenAI SDK (범용): OpenAI(base_url='http://localhost:11436/v1', api_key='none')"
     },
+    "project_context": {
+      "section_title": "프로젝트 컨텍스트",
+      "description": "프로젝트 폴더를 선택하면 CLAUDE.md / AGENTS.md / GEMINI.md를 자동 로드해서 시스템 프롬프트에 주입해",
+      "pick_folder": "폴더 선택",
+      "change_folder": "변경",
+      "clear_folder": "해제",
+      "rescan": "다시 스캔",
+      "detected": "{{size}} bytes",
+      "not_found": "(없음)",
+      "total_size": "총 {{size}} 자 · 약 {{tokens}} 토큰",
+      "no_folder": "선택된 폴더 없음",
+      "custom_title": "추가 MD 파일",
+      "custom_empty": "추가된 파일 없음",
+      "custom_add": "+ 파일 추가",
+      "custom_remove": "제거",
+      "custom_filter_label": "Markdown"
+    },
     "context": {
       "section_title": "컨텍스트 관리",
       "strategy_label": "Compact 전략",
@@ -165,6 +182,7 @@
     "confirm_delete": "정말 삭제할까?"
   },
   "context": {
+    "project_badge": "📄 {{count}} files",
     "tooltip_remaining": "{{percent}}% 남음 — 자동 압축까지",
     "tooltip_usage": "{{used}} / {{total}} 토큰 사용 중",
     "tooltip_click_to_compact": "링 클릭 = 지금 압축",

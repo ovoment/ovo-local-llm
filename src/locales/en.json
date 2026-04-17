@@ -130,6 +130,23 @@
       "guide_zed": "Zed: settings.json → language_models.openai.api_url = http://localhost:11436/v1",
       "guide_generic": "Any OpenAI SDK: OpenAI(base_url='http://localhost:11436/v1', api_key='none')"
     },
+    "project_context": {
+      "section_title": "Project Context",
+      "description": "Pick a project folder to auto-load CLAUDE.md / AGENTS.md / GEMINI.md as system prompts",
+      "pick_folder": "Pick folder",
+      "change_folder": "Change",
+      "clear_folder": "Clear",
+      "rescan": "Rescan",
+      "detected": "{{size}} bytes",
+      "not_found": "(not found)",
+      "total_size": "Total {{size}} chars · ~{{tokens}} tokens",
+      "no_folder": "No folder selected",
+      "custom_title": "Custom MD files",
+      "custom_empty": "No custom files",
+      "custom_add": "+ Add file",
+      "custom_remove": "Remove",
+      "custom_filter_label": "Markdown"
+    },
     "context": {
       "section_title": "Context Management",
       "strategy_label": "Compact strategy",
@@ -165,6 +182,7 @@
     "confirm_delete": "Confirm delete?"
   },
   "context": {
+    "project_badge": "📄 {{count}} files",
     "tooltip_remaining": "{{percent}}% remaining — until auto-compact",
     "tooltip_usage": "{{used}} / {{total}} tokens used",
     "tooltip_click_to_compact": "Click ring to compact now",

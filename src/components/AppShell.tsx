@@ -28,6 +28,9 @@ import { garbageCollectAttachments } from "../lib/attachmentStorage";
 import { getDb } from "../db/index";
 import type { ChatAttachment } from "../types/ovo";
 // [END]
+// [START] Phase 6.1 — project context bootstrap
+import { useProjectContextStore } from "../store/project_context";
+// [END]
 
 export function AppShell() {
   const { t } = useTranslation();
@@ -52,6 +55,12 @@ export function AppShell() {
     // [END]
     // [START] model_perf bootstrap — hydrate perf stats from localStorage
     useModelPerfStore.getState().load();
+    // [END]
+    // [START] Phase 6.1 — project context bootstrap: hydrate then rescan on startup
+    useProjectContextStore.getState().load();
+    if (useProjectContextStore.getState().project_path) {
+      void useProjectContextStore.getState().rescan();
+    }
     // [END]
   }, []);
   // [END]

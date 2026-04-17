@@ -3,6 +3,9 @@ import { RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useSessionsStore } from "../store/sessions";
 import { runCompact, resolveMaxContext, resolveWarnThreshold } from "../lib/compact";
+// [START] Phase 6.1 — project context badge
+import { useProjectContextStore } from "../store/project_context";
+// [END]
 
 // [START] ContextIndicator — SVG donut ring showing context usage for the
 // current session. Color thresholds are dynamic based on resolveWarnThreshold.
@@ -46,6 +49,19 @@ export function ContextIndicator() {
   const sessions = useSessionsStore((s) => s.sessions);
   const escapeToNewSession = useSessionsStore((s) => s.escapeToNewSession);
   const clearCurrentMessages = useSessionsStore((s) => s.clearCurrentMessages);
+
+  // [START] Phase 6.1 — project context badge data
+  const loadedFiles = useProjectContextStore((s) => s.loaded_files);
+  const enabledFiles = useProjectContextStore((s) => s.enabled_files);
+  const activeFiles = loadedFiles.filter((f) => enabledFiles[f.name] !== false);
+  // [START] Phase 6.2 — include custom files in badge count
+  const loadedCustomFiles = useProjectContextStore((s) => s.loaded_custom_files);
+  const activeCount = activeFiles.length + loadedCustomFiles.length;
+  const totalActiveChars =
+    activeFiles.reduce((acc, f) => acc + f.content.length, 0) +
+    loadedCustomFiles.reduce((acc, f) => acc + f.content.length, 0);
+  // [END]
+  // [END]
 
   // [START] Resolved per-model max_context and warn_threshold.
   // Re-resolved whenever modelRef changes.
@@ -178,6 +194,17 @@ export function ContextIndicator() {
         {formatNumber(contextTokens)}&thinsp;/&thinsp;{formatNumber(maxContext)}
         &nbsp;({percent}%)
       </span>
+      {/* [END] */}
+
+      {/* [START] Phase 6.1 — project context badge */}
+      {activeCount > 0 && (
+        <span
+          title={`${activeFiles.map((f) => f.name).join(", ")} · ${totalActiveChars.toLocaleString()} chars`}
+          className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-ovo-chip border border-ovo-border text-ovo-muted cursor-default select-none"
+        >
+          {t("context.project_badge", { count: activeCount })}
+        </span>
+      )}
       {/* [END] */}
 
       {/* [START] Reset dropdown */}

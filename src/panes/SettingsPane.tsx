@@ -7,6 +7,9 @@ import { useSidecarStore } from "../store/sidecar";
 import { useChatSettingsStore } from "../store/chat_settings";
 import { useModelOverridesStore } from "../store/model_overrides";
 import { usePetStore } from "../store/pet";
+// [START] Phase 6.1 — Project Context section
+import { ProjectContextSection } from "../components/ProjectContextSection";
+// [END]
 import { useToastsStore } from "../store/toasts";
 import { listModels } from "../lib/api";
 import type { CompactStrategy, ModelContextOverride, OvoModel } from "../types/ovo";
@@ -572,6 +575,10 @@ export function SettingsPane() {
         <p className="ml-6 text-xs text-ovo-muted">{t("settings.chat_input.sound_help")}</p>
         {/* [END] */}
       </section>
+      {/* [END] */}
+
+      {/* [START] Phase 6.1 — Project Context section */}
+      <ProjectContextSection />
       {/* [END] */}
 
       {/* [START] Context management section (R.6) */}
