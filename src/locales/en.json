@@ -41,7 +41,16 @@
     "pin": "Pin to top",
     "unpin": "Unpin",
     "delete": "Delete page",
-    "delete_confirm": "Really delete \"{{title}}\"?"
+    "delete_confirm": "Really delete \"{{title}}\"?",
+    "tier": {
+      "label": "Tier",
+      "note": "Note",
+      "casebook": "Casebook",
+      "canonical": "Canonical",
+      "note_hint": "📝 Raw jotting · unvetted capture",
+      "casebook_hint": "📚 Distilled patterns · promoted from multiple notes",
+      "canonical_hint": "🏛 Canonical project knowledge · top retrieval weight"
+    }
   },
   "sidecar": {
     "status": {

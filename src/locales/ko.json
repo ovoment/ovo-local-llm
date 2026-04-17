@@ -41,7 +41,16 @@
     "pin": "상단 고정",
     "unpin": "고정 해제",
     "delete": "페이지 삭제",
-    "delete_confirm": "\"{{title}}\" 페이지를 정말 삭제할까?"
+    "delete_confirm": "\"{{title}}\" 페이지를 정말 삭제할까?",
+    "tier": {
+      "label": "단계",
+      "note": "Note",
+      "casebook": "Casebook",
+      "canonical": "Canonical",
+      "note_hint": "📝 원시 기록 · 거친 메모",
+      "casebook_hint": "📚 정제된 패턴/교훈 · 여러 노트에서 승격",
+      "canonical_hint": "🏛 프로젝트 정식 지식 · 채팅 주입 최우선"
+    }
   },
   "sidecar": {
     "status": {

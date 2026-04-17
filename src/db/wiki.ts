@@ -5,6 +5,17 @@
 
 import { getDb, newId, nowMs } from "./index";
 
+// [START] Phase 6.4 — Wiki tiers. 'note' is raw, 'casebook' is distilled
+// patterns / lessons, 'canonical' is vetted project knowledge. Retrieval
+// weighs canonical > casebook > note.
+export type WikiTier = "note" | "casebook" | "canonical";
+export const WIKI_TIERS: ReadonlyArray<WikiTier> = ["note", "casebook", "canonical"];
+
+function isWikiTier(v: unknown): v is WikiTier {
+  return v === "note" || v === "casebook" || v === "canonical";
+}
+// [END]
+
 export interface WikiPageRow {
   id: string;
   title: string;
@@ -15,6 +26,7 @@ export interface WikiPageRow {
   pinned: number;
   created_at: number;
   updated_at: number;
+  tier: string;
 }
 
 export interface WikiPage {
@@ -25,6 +37,7 @@ export interface WikiPage {
   tags: string[];
   category: string | null;
   pinned: boolean;
+  tier: WikiTier;
   created_at: number;
   updated_at: number;
 }
@@ -49,6 +62,7 @@ function rowToPage(row: WikiPageRow): WikiPage {
     tags,
     category: row.category,
     pinned: row.pinned === 1,
+    tier: isWikiTier(row.tier) ? row.tier : "note",
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -68,6 +82,7 @@ export interface CreateWikiPageInput {
   content?: string;
   tags?: string[];
   category?: string | null;
+  tier?: WikiTier;
 }
 
 export async function createWikiPage(input: CreateWikiPageInput): Promise<WikiPage> {
@@ -87,11 +102,12 @@ export async function createWikiPage(input: CreateWikiPageInput): Promise<WikiPa
   }
 
   const tagsJson = input.tags && input.tags.length > 0 ? JSON.stringify(input.tags) : null;
+  const tier: WikiTier = input.tier ?? "note";
 
   await db.execute(
-    `INSERT INTO wiki_pages (id, title, slug, content, tags_json, category, pinned, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $7)`,
-    [id, input.title, slug, input.content ?? "", tagsJson, input.category ?? null, ts],
+    `INSERT INTO wiki_pages (id, title, slug, content, tags_json, category, pinned, tier, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8, $8)`,
+    [id, input.title, slug, input.content ?? "", tagsJson, input.category ?? null, tier, ts],
   );
   return {
     id,
@@ -101,6 +117,7 @@ export async function createWikiPage(input: CreateWikiPageInput): Promise<WikiPa
     tags: input.tags ?? [],
     category: input.category ?? null,
     pinned: false,
+    tier,
     created_at: ts,
     updated_at: ts,
   };
@@ -129,6 +146,7 @@ export interface UpdateWikiPageInput {
   tags?: string[];
   category?: string | null;
   pinned?: boolean;
+  tier?: WikiTier;
 }
 
 export async function updateWikiPage(id: string, patch: UpdateWikiPageInput): Promise<void> {
@@ -156,6 +174,10 @@ export async function updateWikiPage(id: string, patch: UpdateWikiPageInput): Pr
     sets.push(`pinned = $${p++}`);
     params.push(patch.pinned ? 1 : 0);
   }
+  if (patch.tier !== undefined) {
+    sets.push(`tier = $${p++}`);
+    params.push(patch.tier);
+  }
   if (sets.length === 0) return;
   sets.push(`updated_at = $${p++}`);
   params.push(nowMs());
@@ -182,12 +204,22 @@ export async function searchWikiPages(query: string, limit = 10): Promise<WikiPa
   // Escape any double quotes inside the query, then wrap as a phrase for FTS5.
   const escaped = trimmed.replace(/"/g, '""');
   const ftsQuery = `"${escaped}"`;
+  // Canonical pages rank first, then casebook, then raw notes. Within a
+  // tier FTS5's bm25 handles relevance; pinned + recency break ties.
   const rows = await db.select<WikiPageRow[]>(
     `SELECT p.*
        FROM wiki_fts f
        JOIN wiki_pages p ON p.rowid = f.rowid
       WHERE wiki_fts MATCH $1
-      ORDER BY bm25(wiki_fts), p.pinned DESC, p.updated_at DESC
+      ORDER BY
+        CASE p.tier
+          WHEN 'canonical' THEN 0
+          WHEN 'casebook' THEN 1
+          ELSE 2
+        END,
+        bm25(wiki_fts),
+        p.pinned DESC,
+        p.updated_at DESC
       LIMIT $2`,
     [ftsQuery, limit],
   );

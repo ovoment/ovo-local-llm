@@ -25,6 +25,12 @@ fn chats_migrations() -> Vec<Migration> {
             sql: include_str!("../migrations/002_wiki.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 3,
+            description: "wiki: add tier column for Note / Casebook / Canonical",
+            sql: include_str!("../migrations/003_wiki_tier.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }
 // [END]

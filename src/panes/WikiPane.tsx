@@ -2,7 +2,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BookOpen, Plus, Trash2, Pin, Search } from "lucide-react";
 import { useWikiStore } from "../store/wiki";
-import type { WikiPage } from "../db/wiki";
+import type { WikiPage, WikiTier } from "../db/wiki";
+import { WIKI_TIERS } from "../db/wiki";
+
+// [START] Phase 6.4 — Wiki tier metadata (emoji + visual colour tokens).
+// Canonical reads as the most trusted, casebook as distilled patterns, note
+// as raw jot.
+const TIER_META: Record<WikiTier, { emoji: string; dot: string }> = {
+  note: { emoji: "📝", dot: "bg-neutral-400" },
+  casebook: { emoji: "📚", dot: "bg-amber-400" },
+  canonical: { emoji: "🏛", dot: "bg-emerald-400" },
+};
+// [END]
 
 // [START] Phase 6.3 — WikiPane
 // MVP knowledge library. Two-pane layout: list on the left, editor on the
@@ -153,6 +164,13 @@ export function WikiPane() {
                   }`}
                 >
                   <div className="flex items-center gap-1.5">
+                    <span
+                      className="shrink-0 text-[11px] leading-none"
+                      title={t(`wiki.tier.${p.tier}`)}
+                      aria-label={t(`wiki.tier.${p.tier}`)}
+                    >
+                      {TIER_META[p.tier].emoji}
+                    </span>
                     {p.pinned && <Pin className="w-3 h-3 text-ovo-accent shrink-0" aria-hidden />}
                     <span className="font-medium truncate">{p.title || t("wiki.untitled")}</span>
                   </div>
@@ -189,6 +207,36 @@ export function WikiPane() {
                 placeholder={t("wiki.untitled")}
                 className="flex-1 bg-transparent border-0 text-base font-semibold text-ovo-text placeholder:text-ovo-muted/60 focus:outline-none"
               />
+              {/* [START] Phase 6.4 — tier selector pills (note / casebook / canonical) */}
+              <div
+                role="radiogroup"
+                aria-label={t("wiki.tier.label")}
+                className="inline-flex items-center gap-0.5 p-0.5 rounded-full bg-ovo-surface-solid border border-ovo-border"
+              >
+                {WIKI_TIERS.map((tier) => {
+                  const active = selected.tier === tier;
+                  const meta = TIER_META[tier];
+                  return (
+                    <button
+                      key={tier}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => void update(selected.id, { tier })}
+                      title={t(`wiki.tier.${tier}_hint`)}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] transition ${
+                        active
+                          ? "bg-ovo-accent text-ovo-accent-ink"
+                          : "text-ovo-muted hover:text-ovo-text hover:bg-ovo-bg"
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} aria-hidden />
+                      <span>{t(`wiki.tier.${tier}`)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* [END] */}
               <button
                 type="button"
                 onClick={() => void togglePin()}
