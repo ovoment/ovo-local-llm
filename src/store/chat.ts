@@ -70,6 +70,44 @@ function stripDataUrlPrefix(dataUrl: string): string {
 }
 // [END]
 
+// [START] wire normalizer — strict chat templates (Llama, Qwen, Gemma, ...)
+// reject empty messages or same-role runs ("Conversation roles must alternate
+// user/assistant/user/assistant"). After tool-use rounds we can legitimately
+// end up with an assistant with content="" (the tool_use block was the whole
+// turn) followed by a tool_result user message; some templates also choke on
+// two user messages in a row. This pass drops empties and collapses same-role
+// neighbors by concatenating their content (text-only; multi-part arrays pass
+// through untouched because collapsing image/audio parts requires care).
+function wireContentAsText(content: ChatWireMessage["content"]): string | null {
+  if (typeof content === "string") return content;
+  return null; // multi-part array — leave as-is
+}
+
+function normalizeWire(wire: ChatWireMessage[]): ChatWireMessage[] {
+  // Drop empty string-content messages (preserves multi-part / attachment ones)
+  const nonEmpty = wire.filter((m) => {
+    const asText = wireContentAsText(m.content);
+    return asText === null ? true : asText.trim().length > 0;
+  });
+  // Collapse consecutive same-role string-content messages
+  const merged: ChatWireMessage[] = [];
+  for (const m of nonEmpty) {
+    const prev = merged[merged.length - 1];
+    if (
+      prev
+      && prev.role === m.role
+      && typeof prev.content === "string"
+      && typeof m.content === "string"
+    ) {
+      prev.content = `${prev.content}\n\n${m.content}`;
+      continue;
+    }
+    merged.push({ ...m });
+  }
+  return merged;
+}
+// [END]
+
 async function messageToWire(m: Message): Promise<ChatWireMessage> {
   const atts = m.attachments ?? [];
   const role = m.role === "summary" ? "system" : m.role;
@@ -465,7 +503,7 @@ export const useChatStore = create<ChatStoreState>((set, get) => {
       // [END]
 
       for await (const frame of streamChat(
-        { model: modelRef, messages: wire },
+        { model: modelRef, messages: normalizeWire(wire) },
         abortController.signal,
         ports,
       )) {

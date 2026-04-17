@@ -353,28 +353,72 @@ async def websearch(req: WebSearchRequest) -> WebSearchResponse:
         raise HTTPException(status_code=400, detail="empty query")
     limit = max(1, min(req.limit, 20))
 
+    # [START] Try duckduckgo-search first; fall back to httpx + DDG Lite
+    # scraping so web search works even when the pip package hasn't been
+    # synced into the sidecar venv yet (user would otherwise hit 501 until
+    # they manually run `uv sync`).
+    raw: list[dict[str, Any]] = []
+    used_fallback = False
     try:
-        # [START] Lazy import so sidecar startup doesn't pay the cost when
-        # nobody ever calls web search.
         from duckduckgo_search import DDGS
-        # [END]
-    except Exception as e:  # pragma: no cover — missing optional dep
-        logger.warning("duckduckgo-search import failed: %s", e)
-        raise HTTPException(
-            status_code=501,
-            detail="web search backend unavailable (duckduckgo-search not installed)",
-        ) from e
 
-    def _run() -> list[dict[str, Any]]:
-        with DDGS() as ddgs:
-            # duckduckgo-search returns dicts with keys: title, href, body
-            return list(ddgs.text(query, max_results=limit))
+        def _run() -> list[dict[str, Any]]:
+            with DDGS() as ddgs:
+                return list(ddgs.text(query, max_results=limit))
 
-    try:
-        raw = await asyncio.to_thread(_run)
+        try:
+            raw = await asyncio.to_thread(_run)
+        except Exception as e:
+            logger.warning("duckduckgo-search failed, trying fallback: %s", e)
+            used_fallback = True
     except Exception as e:
-        logger.warning("web search failed: %s", e)
-        raise HTTPException(status_code=502, detail=f"web search failed: {e}") from e
+        logger.info("duckduckgo-search not available, using httpx fallback: %s", e)
+        used_fallback = True
+
+    if used_fallback:
+        # DDG Lite is a minimal HTML endpoint without JS. Parse the result
+        # blocks with a tolerant regex pass — good enough for top-N hits.
+        import re
+
+        import httpx
+
+        try:
+            async with httpx.AsyncClient(
+                timeout=10.0,
+                headers={"User-Agent": "OVO/0.0.1 (web search)"},
+                follow_redirects=True,
+            ) as client:
+                resp = await client.get(
+                    "https://html.duckduckgo.com/html/",
+                    params={"q": query},
+                )
+                resp.raise_for_status()
+                html = resp.text
+        except Exception as e:
+            logger.warning("DDG fallback fetch failed: %s", e)
+            raise HTTPException(status_code=502, detail=f"web search failed: {e}") from e
+
+        pattern = re.compile(
+            r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>'
+            r'[\s\S]*?<a[^>]+class="result__snippet"[^>]*>(.*?)</a>',
+            re.IGNORECASE,
+        )
+        tag_strip = re.compile(r"<[^>]+>")
+        for match in pattern.finditer(html):
+            href = match.group(1).strip()
+            title = tag_strip.sub("", match.group(2) or "").strip()
+            snippet = tag_strip.sub("", match.group(3) or "").strip()
+            # DDG wraps redirect URLs like //duckduckgo.com/l/?uddg=... — try to
+            # unwrap so downstream consumers see the real target.
+            m = re.search(r"uddg=([^&]+)", href)
+            if m:
+                from urllib.parse import unquote
+
+                href = unquote(m.group(1))
+            raw.append({"title": title, "href": href, "body": snippet})
+            if len(raw) >= limit:
+                break
+    # [END]
 
     hits: list[WebSearchHit] = []
     for r in raw:
