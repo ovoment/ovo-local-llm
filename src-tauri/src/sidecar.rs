@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
@@ -49,6 +50,11 @@ pub struct SidecarStatus {
 pub struct SidecarState {
     child: Mutex<Option<CommandChild>>,
     status: Mutex<SidecarStatus>,
+    // Incremented every time a new child is spawned. Log-pump and health-loop
+    // tasks capture the generation they were started with and bail out if it
+    // no longer matches the current one — prevents a stale Terminated event
+    // from a killed child clobbering the freshly-spawned child's status.
+    generation: AtomicU64,
 }
 
 impl SidecarState {
@@ -62,6 +68,7 @@ impl SidecarState {
                 message: None,
                 healthy_apis: vec![],
             }),
+            generation: AtomicU64::new(0),
         }
     }
 
@@ -109,6 +116,7 @@ pub fn spawn(app: AppHandle) {
     };
 
     let pid = child.pid();
+    let generation = state.generation.fetch_add(1, Ordering::SeqCst) + 1;
     {
         let mut guard = state.child.lock().unwrap();
         *guard = Some(child);
@@ -117,6 +125,7 @@ pub fn spawn(app: AppHandle) {
 
     // Log pump
     let app_logs = app.clone();
+    let gen_logs = generation;
     tauri::async_runtime::spawn(async move {
         while let Some(event) = rx.recv().await {
             match event {
@@ -130,15 +139,21 @@ pub fn spawn(app: AppHandle) {
                     log::error!(target: "sidecar", "{e}");
                 }
                 CommandEvent::Terminated(payload) => {
-                    log::error!(target: "sidecar", "terminated: {:?}", payload);
-                    update_status(&app_logs, |s| {
-                        s.health = SidecarHealth::Stopped;
-                        s.pid = None;
-                        s.healthy_apis.clear();
-                        s.message = Some(format!("terminated (code {:?})", payload.code));
-                    });
-                    if let Some(state) = app_logs.try_state::<SidecarState>() {
-                        state.child.lock().unwrap().take();
+                    log::error!(target: "sidecar", "terminated gen={gen_logs}: {payload:?}");
+                    let still_current = app_logs
+                        .try_state::<SidecarState>()
+                        .map(|s| s.generation.load(Ordering::SeqCst) == gen_logs)
+                        .unwrap_or(false);
+                    if still_current {
+                        update_status(&app_logs, |s| {
+                            s.health = SidecarHealth::Stopped;
+                            s.pid = None;
+                            s.healthy_apis.clear();
+                            s.message = Some(format!("terminated (code {:?})", payload.code));
+                        });
+                        if let Some(state) = app_logs.try_state::<SidecarState>() {
+                            state.child.lock().unwrap().take();
+                        }
                     }
                     break;
                 }
@@ -149,8 +164,9 @@ pub fn spawn(app: AppHandle) {
 
     // Health monitor
     let app_hc = app.clone();
+    let gen_hc = generation;
     tauri::async_runtime::spawn(async move {
-        health_loop(app_hc, ports).await;
+        health_loop(app_hc, ports, gen_hc).await;
     });
 }
 
@@ -186,7 +202,7 @@ fn update_status<F: FnOnce(&mut SidecarStatus)>(app: &AppHandle, f: F) {
     }
 }
 
-async fn health_loop(app: AppHandle, ports: SidecarPorts) {
+async fn health_loop(app: AppHandle, ports: SidecarPorts, generation: u64) {
     let client = match reqwest::Client::builder()
         .timeout(Duration::from_millis(800))
         .build()
@@ -209,10 +225,13 @@ async fn health_loop(app: AppHandle, ports: SidecarPorts) {
     let mut last_health = SidecarHealth::Starting;
 
     loop {
-        let child_alive = app
-            .try_state::<SidecarState>()
-            .map(|s| s.child.lock().unwrap().is_some())
-            .unwrap_or(false);
+        let Some(state) = app.try_state::<SidecarState>() else {
+            break;
+        };
+        if state.generation.load(Ordering::SeqCst) != generation {
+            break;
+        }
+        let child_alive = state.child.lock().unwrap().is_some();
         if !child_alive {
             break;
         }
