@@ -6,6 +6,7 @@ import {
   searchModels,
   searchImageModels,
   startDownload,
+  startDownloadFromUrl,
   getDownload,
   listDownloads,
   deleteModel,
@@ -115,6 +116,11 @@ function HfDownloadSection({
   const [results, setResults] = useState<HfSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  // [START] URL download input
+  const [urlInput, setUrlInput] = useState("");
+  const [urlLoading, setUrlLoading] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
+  // [END]
   // tasks keyed by repo_id for fast lookup
   const [tasks, setTasks] = useState<Record<string, DownloadTask>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -368,8 +374,47 @@ function HfDownloadSection({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("models.download.search_placeholder")}
-            className="w-full px-3 py-2 rounded-lg bg-ovo-surface border border-ovo-border text-sm text-ovo-text placeholder:text-ovo-muted focus:outline-none focus:ring-1 focus:ring-ovo-accent mb-3"
+            className="w-full px-3 py-2 rounded-lg bg-ovo-surface border border-ovo-border text-sm text-ovo-text placeholder:text-ovo-muted focus:outline-none focus:ring-1 focus:ring-ovo-accent mb-2"
           />
+
+          {/* [START] URL download input */}
+          <div className="flex gap-2 mb-3">
+            <input
+              type="url"
+              value={urlInput}
+              onChange={(e) => { setUrlInput(e.target.value); setUrlError(null); }}
+              placeholder="https://huggingface.co/org/model or org/model"
+              className="flex-1 px-3 py-1.5 rounded-lg bg-ovo-surface border border-ovo-border text-xs text-ovo-text placeholder:text-ovo-muted focus:outline-none focus:ring-1 focus:ring-ovo-accent"
+            />
+            <button
+              disabled={!urlInput.trim() || urlLoading}
+              onClick={async () => {
+                setUrlLoading(true);
+                setUrlError(null);
+                try {
+                  const task = await startDownloadFromUrl(urlInput.trim(), ports);
+                  if (task.status === "error") {
+                    setUrlError(task.error ?? "Invalid URL");
+                  } else {
+                    setTasks((prev) => ({ ...prev, [task.repo_id]: task }));
+                    setUrlInput("");
+                    onDownloadDone();
+                  }
+                } catch (e) {
+                  setUrlError(e instanceof Error ? e.message : String(e));
+                } finally {
+                  setUrlLoading(false);
+                }
+              }}
+              className="px-3 py-1.5 rounded-lg bg-ovo-accent text-white text-xs font-medium disabled:opacity-40 hover:brightness-110 transition-all"
+            >
+              {urlLoading ? "..." : "↓ URL"}
+            </button>
+          </div>
+          {urlError && (
+            <p className="text-xs text-rose-500 px-1 -mt-2 mb-2">{urlError}</p>
+          )}
+          {/* [END] */}
 
           {/* Results */}
           {searching && (

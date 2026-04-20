@@ -186,6 +186,18 @@ export async function startDownload(
   return jsonOrThrow<DownloadTask>(resp);
 }
 
+export async function startDownloadFromUrl(
+  url: string,
+  ports: SidecarPorts = DEFAULT_PORTS,
+): Promise<DownloadTask> {
+  const resp = await fetch(`${nativeBase(ports)}/ovo/models/download-url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+  return jsonOrThrow<DownloadTask>(resp);
+}
+
 export async function getDownload(
   task_id: string,
   ports: SidecarPorts = DEFAULT_PORTS,
