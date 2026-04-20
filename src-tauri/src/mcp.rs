@@ -13,6 +13,52 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tokio::sync::oneshot;
 
+// [START] Phase R — PATH augmentation helper.
+// Collects the most common locations where developer-tooling binaries live
+// on macOS so MCP servers invoked as `npx`, `uvx`, `node`, `bun`, etc.
+// resolve when OVO is launched from Finder (where the inherited PATH is
+// reduced to the system defaults). The user's existing PATH, if any, is
+// appended last so explicit overrides still take precedence.
+fn build_augmented_path() -> String {
+    let mut parts: Vec<String> = Vec::new();
+    let home = std::env::var("HOME").unwrap_or_default();
+
+    // Homebrew (Apple Silicon) + Intel fallback.
+    parts.push("/opt/homebrew/bin".into());
+    parts.push("/opt/homebrew/sbin".into());
+    parts.push("/usr/local/bin".into());
+    parts.push("/usr/local/sbin".into());
+
+    // User-local install locations that don't require sudo.
+    if !home.is_empty() {
+        parts.push(format!("{home}/.local/bin")); // uv tool, pipx
+        parts.push(format!("{home}/.cargo/bin")); // Rust / cargo-installed
+        parts.push(format!("{home}/.bun/bin"));   // Bun
+        parts.push(format!("{home}/.deno/bin"));  // Deno
+        parts.push(format!("{home}/.npm-global/bin")); // npm global
+        parts.push(format!("{home}/.volta/bin")); // Volta
+        parts.push(format!("{home}/.nvm/versions/node/*/bin")); // NVM (glob-ish — some tools honor it)
+    }
+
+    // System defaults last, in case the inherited PATH is empty.
+    parts.push("/usr/bin".into());
+    parts.push("/bin".into());
+    parts.push("/usr/sbin".into());
+    parts.push("/sbin".into());
+
+    // Finally, append the inherited PATH so explicit user overrides
+    // (set via env in the MCP server config, a shell RC export, etc.)
+    // still win when deduping happens downstream.
+    if let Ok(existing) = std::env::var("PATH") {
+        if !existing.is_empty() {
+            parts.push(existing);
+        }
+    }
+
+    parts.join(":")
+}
+// [END]
+
 // ── Public types ─────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -197,16 +243,44 @@ pub async fn mcp_start(
     state: tauri::State<'_, McpState>,
 ) -> Result<Vec<McpToolInfo>, String> {
     // [START] spawn subprocess
+    // [START] Phase R — augment PATH for GUI launch.
+    // macOS apps launched from Finder inherit a minimal PATH
+    // (`/usr/bin:/bin:/usr/sbin:/sbin`), which means `npx` / `uvx` / `node`
+    // — the usual entry points for MCP servers — can't be found. Prepend
+    // the common user-bin directories so typical MCP commands resolve
+    // without the user having to hardcode absolute paths in every server
+    // config. Existing PATH (if any) is kept at the tail so explicit user
+    // overrides still win.
+    let augmented_path = build_augmented_path();
     let mut cmd = Command::new(&command);
     cmd.args(&args)
         .envs(&env)
+        .env("PATH", &augmented_path)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::null()); // MCP servers may write diagnostics to stderr
+        .stderr(Stdio::piped()); // Capture stderr so spawn failures surface to the UI.
+    // [END]
 
-    let mut child = cmd.spawn().map_err(|e| format!("spawn failed: {e}"))?;
+    let mut child = cmd.spawn().map_err(|e| {
+        format!(
+            "spawn failed for `{command}`: {e}. \
+             If this is a tool like npx / uvx / node, make sure it's installed — \
+             PATH searched: {augmented_path}"
+        )
+    })?;
     let stdin = child.stdin.take().ok_or("no stdin")?;
     let stdout = child.stdout.take().ok_or("no stdout")?;
+    // Drain stderr into the log so diagnostic output is visible without
+    // leaking binary data through the UI.
+    if let Some(stderr) = child.stderr.take() {
+        std::thread::spawn(move || {
+            use std::io::{BufRead, BufReader};
+            let reader = BufReader::new(stderr);
+            for line in reader.lines().map_while(Result::ok) {
+                log::warn!(target: "mcp", "stderr: {line}");
+            }
+        });
+    }
     // [END]
 
     let stdin = Arc::new(Mutex::new(stdin));
