@@ -4,10 +4,10 @@
 
 ## 핵심 원칙
 
-1. **MLX 전용** — Apple Silicon 외 환경 미지원. GGUF/GGML 미지원.
-2. **HuggingFace 네이티브** — Ollama 식 별도 모델 저장소 만들지 않음. `~/.cache/huggingface/hub/`를 그대로 사용.
-3. **로컬 전용** — 네트워크 호출은 모델 다운로드(HF API)와 사용자 설정 시에만. 원격 LLM API 호출 없음.
-4. **Claude Code 공존** — 부가 기능, 계정/세션 토큰 등 민감 정보 절대 안 건드림.
+1. **Apple Silicon 최적화** — 주 런타임은 MLX (mlx-lm / mlx-vlm / mlx-whisper). 비-MLX 체크포인트는 `transformers` 로 폴백. Intel Mac 미지원.
+2. **HuggingFace 네이티브** — Ollama 식 별도 모델 저장소 만들지 않음. `~/.cache/huggingface/hub/` + LM Studio 캐시를 그대로 사용.
+3. **로컬 전용** — 네트워크 호출은 모델 다운로드(HF API)와 사용자가 opt-in 한 기능(web_search 등) 에서만. 기본 상태에서 원격 LLM API 호출 없음.
+4. **Claude Code 공존** — 선택적 통합. 계정/세션 토큰 등 민감 정보 절대 안 건드림.
 
 ## 스택 구성
 
