@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useSidecarStore } from "../store/sidecar";
 import { useToastsStore } from "../store/toasts";
-import { listModels, streamChat, type ChatWireMessage } from "../lib/api";
+import { listModels, streamChat, cleanModelOutput, type ChatWireMessage } from "../lib/api";
 import { isChatCapableModel } from "../lib/models";
 import {
   createPingpongSession, listPingpongSessions, deletePingpongSession,
@@ -223,15 +223,7 @@ export function PingpongPane() {
     }
 
     if (full) {
-      // [START] Strip model template tokens + thinking preamble
-      full = full.replace(/<\|[^|]*\|>/g, "");
-      const thinkEnd = full.search(/(?:Let's do (?:that|this|it)\.|Let's respond\.)(.)/i);
-      if (thinkEnd > 0) {
-        const matchLen = full.slice(thinkEnd).match(/^[^.]*\.\s*/)?.[0].length ?? 0;
-        full = full.slice(thinkEnd + matchLen);
-      }
-      full = full.replace(/^analysis/i, "").replace(/^assistantfinal/i, "").trim();
-      // [END]
+      full = cleanModelOutput(full);
       const assistantMsg: ChatWireMessage = { role: "assistant", content: full };
       const setter = targetSide === "left" ? setLeft : setRight;
       setter((prev) => ({ ...prev, messages: [...prev.messages, assistantMsg] }));

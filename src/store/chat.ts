@@ -1041,6 +1041,12 @@ export const useChatStore = create<ChatStoreState>((set, get) => {
       }
       // [END]
 
+      // [START] Clean model output (wrap thinking in <think> tags)
+      const { cleanModelOutput } = await import("../lib/api");
+      accumulated = cleanModelOutput(accumulated);
+      useSessionsStore.getState().patchMessage(assistant.id, accumulated);
+      // [END]
+
       // [START] Persist final content + usage to SQLite + session totals.
       await updateMessageContent(assistant.id, accumulated, {
         prompt_tokens: finalUsage?.prompt_tokens ?? null,

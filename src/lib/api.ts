@@ -16,6 +16,27 @@ export interface ChatWireMessage {
 }
 // [END]
 
+// [START] Wrap model thinking/template tokens as <think> blocks
+export function cleanModelOutput(text: string): string {
+  let cleaned = text;
+  // Strip template tokens
+  cleaned = cleaned.replace(/<\|[^|]*\|>/g, "");
+  // Detect thinking preamble and wrap in <think> tags
+  const thinkMatch = cleaned.match(/(?:Let's do (?:that|this|it)\.|Let's respond\.|That is \d)/i);
+  if (thinkMatch && thinkMatch.index != null) {
+    const thinkPart = cleaned.slice(0, thinkMatch.index + thinkMatch[0].length).trim();
+    const responsePart = cleaned.slice(thinkMatch.index + thinkMatch[0].length).trim()
+      .replace(/^(?:assistantfinal|assistant|final)\s*/i, "").trim();
+    if (responsePart.length > 5) {
+      return `<think>${thinkPart}</think>${responsePart}`;
+    }
+  }
+  // Strip leftover prefixes
+  cleaned = cleaned.replace(/^(?:analysis|assistantfinal|assistant|final)\s*/i, "");
+  return cleaned.trim();
+}
+// [END]
+
 export const DEFAULT_PORTS: SidecarPorts = {
   ollama: 11435,
   openai: 11436,
