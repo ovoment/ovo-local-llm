@@ -58,6 +58,12 @@ fn chats_migrations() -> Vec<Migration> {
             sql: include_str!("../migrations/007_message_branching.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 8,
+            description: "ping pong sessions + messages",
+            sql: include_str!("../migrations/008_pingpong.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }
 // [END]
