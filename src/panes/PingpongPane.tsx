@@ -143,6 +143,7 @@ export function PingpongPane() {
   const [urlValue, setUrlValue] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachMenuRef = useRef<HTMLDivElement>(null);
+  const preReadTexts = useRef<Record<string, string>>({});
   // [END]
 
   useEffect(() => {
@@ -255,17 +256,34 @@ export function PingpongPane() {
   async function handleFiles(fileList: FileList | File[]) {
     const files = Array.from(fileList);
     for (const f of files) {
+      const id = genId();
       const preview = await readPreview(f);
-      setAttachments((prev) => [...prev, { kind: "file", id: genId(), file: f, previewDataUrl: preview }]);
+      setAttachments((prev) => [...prev, { kind: "file", id, file: f, previewDataUrl: preview }]);
+      if (!f.type.startsWith("image/")) {
+        try {
+          const ext = await extractAttachmentText(f);
+          if (ext.kind !== "skipped" && ext.text.trim()) {
+            preReadTexts.current[id] = formatAttachedFileBlock(ext);
+          } else {
+            const raw = await f.text().catch(() => "");
+            if (raw.trim()) preReadTexts.current[id] = `[${f.name}]\n${raw}`;
+          }
+        } catch {
+          const raw = await f.text().catch(() => "");
+          if (raw.trim()) preReadTexts.current[id] = `[${f.name}]\n${raw}`;
+        }
+      }
     }
     setShowAttachMenu(false);
   }
 
   function handleCodeSubmit() {
     if (!codeInput?.trim()) return;
+    const id = genId();
     const blob = new Blob([codeInput], { type: "text/plain" });
     const file = new File([blob], "code.txt", { type: "text/plain" });
-    setAttachments((prev) => [...prev, { kind: "file", id: genId(), file, previewDataUrl: null }]);
+    preReadTexts.current[id] = `\`\`\`\n${codeInput}\n\`\`\``;
+    setAttachments((prev) => [...prev, { kind: "file", id, file, previewDataUrl: null }]);
     setCodeInput(null);
   }
 
@@ -279,15 +297,14 @@ export function PingpongPane() {
 
   function removeAttachment(id: string) {
     setAttachments((prev) => prev.filter((a) => a.id !== id));
+    delete preReadTexts.current[id];
   }
 
   async function buildAttachmentWire(text: string, atts: ChatAttachment[]): Promise<string | ChatContentPart[]> {
     if (atts.length === 0) return text;
 
     const parts: ChatContentPart[] = [];
-    const extractedBlocks: string[] = [];
-
-    if (text) parts.push({ type: "text", text });
+    let fullText = text;
 
     for (const a of atts) {
       if (a.kind === "url") {
@@ -295,47 +312,24 @@ export function PingpongPane() {
         continue;
       }
       if (a.kind === "file") {
-        const file = a.file;
-        if (file.type.startsWith("image/")) {
+        if (a.file.type.startsWith("image/")) {
           const dataUrl = await new Promise<string>((resolve) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(a.file);
           });
           parts.push({ type: "image_url", image_url: { url: dataUrl } });
-        } else if (file.type === "text/plain" || file.name.endsWith(".txt") || file.name.endsWith(".md")) {
-          const codeText = await file.text();
-          if (codeText.trim()) {
-            extractedBlocks.push(`[${file.name}]\n\`\`\`\n${codeText}\n\`\`\``);
-          }
         } else {
-          try {
-            const ext = await extractAttachmentText(file);
-            if (ext.kind !== "skipped") {
-              extractedBlocks.push(formatAttachedFileBlock(ext));
-            }
-          } catch {
-            const fallback = await file.text().catch(() => "");
-            extractedBlocks.push(fallback.trim() ? `[${file.name}]\n${fallback}` : `[${file.name}: extraction failed]`);
+          const cached = preReadTexts.current[a.id];
+          if (cached) {
+            fullText = fullText ? `${fullText}\n\n${cached}` : cached;
           }
         }
       }
     }
 
-    if (extractedBlocks.length > 0) {
-      const joined = extractedBlocks.join("\n\n");
-      const existingText = parts.find((p) => p.type === "text");
-      if (existingText && existingText.type === "text") {
-        existingText.text = `${existingText.text}\n\n${joined}`;
-      } else {
-        parts.push({ type: "text", text: joined });
-      }
-    }
-
-    const hasMultimodal = parts.some((p) => p.type === "image_url" || p.type === "input_audio");
-    if (!hasMultimodal && parts.length === 1 && parts[0].type === "text") {
-      return parts[0].text;
-    }
+    if (parts.length === 0) return fullText;
+    parts.unshift({ type: "text", text: fullText });
     return parts;
   }
   // [END]
@@ -500,6 +494,7 @@ export function PingpongPane() {
     const content = await buildAttachmentWire(cleanText || text, attachments);
     const userMsg: ChatWireMessage = { role: "user", content };
     setAttachments([]);
+    preReadTexts.current = {};
     // [END]
 
     // [START] Build display content with attachment previews
