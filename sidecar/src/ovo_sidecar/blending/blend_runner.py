@@ -142,9 +142,10 @@ async def _run_blend(run: BlendRun, config: BlendConfig) -> None:
             run.progress = 0.5
 
             merged: dict[str, mx.array] = {}
-            total_keys = len(weights_a)
-            for i, key in enumerate(weights_a):
-                if key not in weights_b:
+            blend_keys = [k for k in weights_a if isinstance(weights_a[k], mx.array)]
+            total_keys = len(blend_keys)
+            for i, key in enumerate(blend_keys):
+                if key not in weights_b or not isinstance(weights_b[key], mx.array):
                     merged[key] = weights_a[key]
                     continue
 
