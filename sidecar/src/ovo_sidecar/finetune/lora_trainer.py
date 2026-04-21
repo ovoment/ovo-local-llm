@@ -114,24 +114,26 @@ async def _run_training(run: TrainingRun) -> None:
                 max_seq_length=run.config.max_seq_length,
             )
 
-            class ProgressCallback:
+            from mlx_lm.tuner.callbacks import TrainingCallback as _TCB  # type: ignore[import-untyped]
+
+            class ProgressCallback(_TCB):
                 def __init__(self, run_ref: TrainingRun) -> None:
                     self.run = run_ref
-                    self.step = 0
 
-                def __call__(self, step: int, loss: float, **kwargs) -> None:  # type: ignore[no-untyped-def]
-                    self.step = step
+                def on_train_loss_report(self, train_info: dict) -> None:
+                    step = train_info.get("iteration", 0)
+                    loss = train_info.get("train_loss", 0.0)
                     self.run.progress = min(1.0, step / max(1, total_iters))
                     self.run.current_epoch = step // max(1, iters_per_epoch)
                     self.run.train_loss = loss
                     self.run.elapsed_seconds = time.time() - start_time
 
-                    val_loss = kwargs.get("val_loss")
-                    if val_loss is not None:
-                        self.run.valid_loss = val_loss
-
                     if _cancel_flags.get(run.run_id, False):
                         raise KeyboardInterrupt("Training cancelled by user")
+
+                def on_val_loss_report(self, val_info: dict) -> None:
+                    val_loss = val_info.get("val_loss", 0.0)
+                    self.run.valid_loss = val_loss
 
             import mlx.optimizers as optim  # type: ignore[import-untyped]
             optimizer = optim.Adam(learning_rate=run.config.learning_rate)
