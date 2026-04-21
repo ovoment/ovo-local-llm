@@ -558,11 +558,15 @@ export function PingpongPane() {
           const originalTopic = cleanText || text;
           try {
             while (autoRef.current) {
+              await new Promise((r) => setTimeout(r, 1000));
+              if (!autoRef.current) break;
               const toLeft: ChatWireMessage = { role: "user", content: `[주제 리마인드: ${originalTopic}]\n[${rightName}]: ${lastRight}` };
               setLeft((prev) => ({ ...prev, messages: [...prev.messages, toLeft] }));
               lastLeft = await generateResponse("left", [toLeft]);
               if (!lastLeft || !autoRef.current) break;
 
+              await new Promise((r) => setTimeout(r, 1000));
+              if (!autoRef.current) break;
               const toRight: ChatWireMessage = { role: "user", content: `[주제 리마인드: ${originalTopic}]\n[${leftName}]: ${lastLeft}` };
               setRight((prev) => ({ ...prev, messages: [...prev.messages, toRight] }));
               lastRight = await generateResponse("right", [toRight]);
