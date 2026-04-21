@@ -416,9 +416,37 @@ export function PingpongPane() {
       setter((prev) => ({ ...prev, messages: [...prev.messages, assistantMsg] }));
 
       const speakerName = slot.name || slot.repoId.split("/").pop() || targetSide;
-      const displayMsg: DisplayMessage = { speaker: speakerName, role: "assistant", content: full, side: targetSide };
-      setTimeline((prev) => [...prev, displayMsg]);
-      void persistMessage(displayMsg);
+      const MAX_BUBBLE = 300;
+      if (full.length > MAX_BUBBLE) {
+        const paragraphs = full.split(/\n\n+/);
+        let chunk = "";
+        const chunks: string[] = [];
+        for (const p of paragraphs) {
+          if (chunk && (chunk.length + p.length) > MAX_BUBBLE) {
+            chunks.push(chunk.trim());
+            chunk = p;
+          } else {
+            chunk = chunk ? `${chunk}\n\n${p}` : p;
+          }
+        }
+        if (chunk.trim()) chunks.push(chunk.trim());
+        if (chunks.length < 2) {
+          const mid = Math.ceil(full.length / 2);
+          const breakAt = full.lastIndexOf(". ", mid);
+          const splitAt = breakAt > full.length * 0.3 ? breakAt + 1 : mid;
+          chunks.length = 0;
+          chunks.push(full.slice(0, splitAt).trim(), full.slice(splitAt).trim());
+        }
+        for (const c of chunks) {
+          const msg: DisplayMessage = { speaker: speakerName, role: "assistant", content: c, side: targetSide };
+          setTimeline((prev) => [...prev, msg]);
+          void persistMessage(msg);
+        }
+      } else {
+        const displayMsg: DisplayMessage = { speaker: speakerName, role: "assistant", content: full, side: targetSide };
+        setTimeline((prev) => [...prev, displayMsg]);
+        void persistMessage(displayMsg);
+      }
     }
     return full;
   };
