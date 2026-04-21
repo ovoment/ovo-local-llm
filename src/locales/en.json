@@ -76,7 +76,7 @@
     "tab_datasets": "Datasets",
     "tab_train": "Train",
     "tab_adapters": "Adapters",
-    "dataset_name_placeholder": "Dataset name (e.g. Company Docs)",
+    "dataset_name_placeholder": "Dataset name (e.g. OVO Company Policy)",
     "create_dataset": "Create from folder",
     "select_folder": "Select document folder",
     "parsing_docs": "Parsing documents...",

@@ -76,7 +76,7 @@
     "tab_datasets": "데이터셋",
     "tab_train": "학습",
     "tab_adapters": "어댑터",
-    "dataset_name_placeholder": "데이터셋 이름 (예: 연우건설 사규)",
+    "dataset_name_placeholder": "데이터셋 이름 (예: OVO 회사 규정)",
     "create_dataset": "폴더에서 생성",
     "select_folder": "문서 폴더 선택",
     "parsing_docs": "문서 파싱 중...",
