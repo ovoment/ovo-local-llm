@@ -67,11 +67,30 @@ function renderBubbleContent(text: string): React.ReactNode {
   const parts = text.split(/(```[\s\S]*?```)/g);
   return parts.map((part, i) => {
     if (part.startsWith("```") && part.endsWith("```")) {
-      const code = part.slice(3, -3).replace(/^\w*\n/, "");
+      const inner = part.slice(3, -3);
+      const langMatch = inner.match(/^(\w+)\n/);
+      const lang = langMatch ? langMatch[1] : "";
+      const code = langMatch ? inner.slice(langMatch[0].length) : inner.replace(/^\n/, "");
+      const lines = code.split("\n");
       return (
-        <pre key={i} className="my-2 p-2 rounded border border-dashed border-ovo-border bg-ovo-bg text-[11px] font-mono overflow-x-auto whitespace-pre-wrap break-all">
-          {code}
-        </pre>
+        <div key={i} className="my-2 rounded-lg overflow-hidden border border-ovo-border">
+          <div className="flex items-center justify-between px-3 py-1 bg-[#1e1e1e] border-b border-ovo-border">
+            <span className="text-[10px] text-neutral-400 font-mono">{lang || "code"}</span>
+            <span className="text-[10px] text-neutral-500">{lines.length} lines</span>
+          </div>
+          <div className="bg-[#1e1e1e] p-2 overflow-x-auto">
+            <table className="border-collapse text-[11px] font-mono leading-relaxed">
+              <tbody>
+                {lines.map((line, li) => (
+                  <tr key={li}>
+                    <td className="pr-3 text-right text-neutral-600 select-none align-top w-[1%] whitespace-nowrap">{li + 1}</td>
+                    <td className="text-neutral-200 whitespace-pre-wrap break-all">{line || " "}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       );
     }
     return part ? <span key={i} className="whitespace-pre-wrap">{part}</span> : null;
@@ -516,7 +535,7 @@ export function PingpongPane() {
 
     if (target === "both" && left.repoId && right.repoId) {
       // [START] Sequential: left → right → auto-continue passing responses directly
-      const leftResponse = await generateResponse("left");
+      const leftResponse = await generateResponse("left", [userMsg]);
       if (leftResponse) {
         const leftName = left.name || left.repoId.split("/").pop() || "Left";
         const rightName = right.name || right.repoId.split("/").pop() || "Right";
@@ -555,10 +574,10 @@ export function PingpongPane() {
       // [END]
     } else {
       if ((target === "left") && left.repoId) {
-        await generateResponse("left");
+        await generateResponse("left", [userMsg]);
       }
       if ((target === "right") && right.repoId) {
-        await generateResponse("right");
+        await generateResponse("right", [userMsg]);
       }
     }
   };
