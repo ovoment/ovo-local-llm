@@ -23,6 +23,7 @@ import {
 import { isImageGenModel, isChatCapableModel } from "../lib/models";
 import { useSidecarStore } from "../store/sidecar";
 import { useModelPerfStore } from "../store/model_perf";
+import { FitOverview } from "../components/FitOverview";
 import { useSessionsStore } from "../store/sessions";
 import { useToastsStore } from "../store/toasts";
 import type { OvoModel, QuantizationConfig } from "../types/ovo";
@@ -518,8 +519,8 @@ export function ModelsPane() {
   // [END]
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // [START] Phase 7 — active tab for general / image model split
-  const [activeTab, setActiveTab] = useState<"general" | "image">("general");
+  // [START] Phase 7 — active tab: fit + general + image merged into one pane
+  const [activeTab, setActiveTab] = useState<"fit" | "general" | "image">("fit");
   // Set of repo_ids currently being deleted (rmtree can take seconds on big
   // models — UI dims the row + spins the trash icon so the click registers).
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
@@ -662,9 +663,9 @@ export function ModelsPane() {
         </span>
       </div>
 
-      {/* [START] Phase 7 — general/image tab switcher */}
+      {/* [START] fit / general / image tab switcher */}
       <div className="inline-flex rounded-md border border-ovo-border bg-ovo-surface p-0.5 mb-4">
-        {(["general", "image"] as const).map((tab) => (
+        {(["fit", "general", "image"] as const).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -676,12 +677,18 @@ export function ModelsPane() {
             }`}
           >
             {t(`models.tab_${tab}`)}
-            <span className="ml-1 font-mono tabular-nums text-[10px] opacity-70">
-              {tab === "image" ? imageModels.length : chatModels.length}
-            </span>
+            {tab !== "fit" && (
+              <span className="ml-1 font-mono tabular-nums text-[10px] opacity-70">
+                {tab === "image" ? imageModels.length : chatModels.length}
+              </span>
+            )}
           </button>
         ))}
       </div>
+      {/* [END] */}
+
+      {/* [START] Fit tab — hardware fit overview */}
+      {activeTab === "fit" && <FitOverview />}
       {/* [END] */}
 
       {/* [START] Phase 8 — Fit overview moved to dedicated Fit pane.

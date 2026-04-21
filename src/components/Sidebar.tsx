@@ -12,14 +12,19 @@ interface NavItem {
   icon: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
-const NAV_ITEMS: NavItem[] = [
+// [START] Sidebar sections — "작업" (workspace) vs "모델 랩" (model lab)
+const WORK_ITEMS: NavItem[] = [
   { key: "chat", icon: MessageSquare },
   { key: "code", icon: Code2 },
   { key: "image", icon: ImageIcon },
   { key: "wiki", icon: BookOpen },
+];
+
+const LAB_ITEMS: NavItem[] = [
   { key: "finetune", icon: GraduationCap },
   { key: "blending", icon: Blend },
 ];
+// [END]
 
 // [START] Secondary bottom-dock items — models/settings/info rendered as
 // small icon-only buttons at the bottom center of the sidebar (no labels).
@@ -27,7 +32,6 @@ const NAV_ITEMS: NavItem[] = [
 // both orbit the same "what can I run?" question from different angles.
 const BOTTOM_ITEMS: NavItem[] = [
   { key: "models", icon: Package },
-  { key: "fit", icon: Gauge },
   { key: "settings", icon: Settings },
   { key: "about", icon: Info },
 ];
@@ -71,8 +75,9 @@ export function Sidebar({ active, onSelect }: SidebarProps) {
         </div>
       </div>
       {/* [END] */}
-      <ul className="py-2">
-        {NAV_ITEMS.map(({ key, icon: Icon }) => {
+      {/* [START] Section: workspace */}
+      <ul className="pt-2 pb-1">
+        {WORK_ITEMS.map(({ key, icon: Icon }) => {
           const isActive = key === active;
           return (
             <li key={key}>
@@ -91,6 +96,36 @@ export function Sidebar({ active, onSelect }: SidebarProps) {
           );
         })}
       </ul>
+      {/* [END] */}
+
+      {/* [START] Section divider + Model Lab */}
+      <div className="mx-4 my-1 border-t border-ovo-border" />
+      <div className="px-5 pt-1 pb-1">
+        <span className="text-[10px] uppercase tracking-widest text-ovo-muted font-semibold">
+          {t("nav.section_lab")}
+        </span>
+      </div>
+      <ul className="pb-2">
+        {LAB_ITEMS.map(({ key, icon: Icon }) => {
+          const isActive = key === active;
+          return (
+            <li key={key}>
+              <button
+                onClick={() => onSelect(key)}
+                className={`w-full flex items-center gap-3 px-5 py-2.5 text-sm transition ${
+                  isActive
+                    ? "bg-ovo-nav-active text-ovo-text font-medium border-l-2 border-ovo-accent"
+                    : "text-ovo-muted hover:bg-ovo-nav-active-hover border-l-2 border-transparent"
+                }`}
+              >
+                <Icon className="w-4 h-4" aria-hidden />
+                <span>{t(`nav.${key}`)}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {/* [END] */}
       {/* [START] Recents panel — context-dependent on active tab */}
       <div className="flex-1 overflow-y-auto min-h-0">
         {active === "chat" && <RecentsPanel />}

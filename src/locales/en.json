@@ -13,7 +13,8 @@
     "models": "Models",
     "fit": "Fit",
     "settings": "Settings",
-    "about": "About"
+    "about": "About",
+    "section_lab": "Model Lab"
   },
   "kb": {
     "title": "Knowledge Base",
@@ -533,6 +534,7 @@
     "count": "{{count}} models",
     "empty": "No installed models. Use search or catalog above.",
     "mlx_only": "MLX models only",
+    "tab_fit": "Fit",
     "tab_general": "General",
     "tab_image": "Image",
     "fit": {

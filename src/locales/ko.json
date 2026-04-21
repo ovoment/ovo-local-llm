@@ -13,7 +13,8 @@
     "models": "모델",
     "fit": "적합도",
     "settings": "설정",
-    "about": "정보"
+    "about": "정보",
+    "section_lab": "모델 랩"
   },
   "kb": {
     "title": "지식 베이스",
@@ -533,6 +534,7 @@
     "count": "{{count}}개 모델",
     "empty": "설치된 모델이 없습니다. 위 검색/카탈로그에서 받아 보세요",
     "mlx_only": "MLX 모델만 표시",
+    "tab_fit": "적합도",
     "tab_general": "일반",
     "tab_image": "이미지",
     "fit": {
