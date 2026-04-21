@@ -487,9 +487,12 @@ export function PingpongPane() {
     let displayContent = text;
     for (const a of attachments) {
       if (a.kind === "file") {
-        if (a.file.type === "text/plain" || a.file.name.endsWith(".txt") || a.file.name.endsWith(".md")) {
+        if (a.file.name === "code.txt") {
           const codeText = await a.file.text();
           displayContent = `${displayContent}\n\`\`\`\n${codeText}\n\`\`\``.trim();
+        } else if (a.file.type === "text/plain" || a.file.name.endsWith(".txt") || a.file.name.endsWith(".md")) {
+          const codeText = await a.file.text();
+          displayContent = `${displayContent}\n📎 ${a.file.name}\n\`\`\`\n${codeText}\n\`\`\``.trim();
         } else {
           displayContent = `${displayContent}\n📎 ${a.file.name}`.trim();
         }
@@ -497,7 +500,7 @@ export function PingpongPane() {
         displayContent = `${displayContent}\n🔗 ${a.url}`.trim();
       }
     }
-    const attachNames = attachments.map((a) => a.kind === "file" ? a.file.name : a.kind === "url" ? a.url : "").filter(Boolean);
+    const attachNames = attachments.map((a) => a.kind === "file" ? (a.file.name === "code.txt" ? "" : a.file.name) : a.kind === "url" ? a.url : "").filter(Boolean);
     const speaker = attachNames.length > 0 ? attachNames.join(", ") : t("pingpong.you");
     const displayMsg: DisplayMessage = { speaker, role: "user", content: displayContent, side: "user" };
     // [END]
