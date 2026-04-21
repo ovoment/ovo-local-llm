@@ -1,6 +1,6 @@
 {
   "name": "ovo",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Local Claude Code for Apple Silicon — AI coding agent + chat + image gen, zero cloud",
   "type": "module",
   "private": true,

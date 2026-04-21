@@ -82,6 +82,25 @@ class OpenAIStreamOptions(BaseModel):
     include_usage: bool = False
 
 
+# [START] OpenAI function calling types
+class OpenAIFunctionDef(BaseModel):
+    name: str
+    description: str = ""
+    parameters: dict[str, Any] = {}
+
+
+class OpenAIToolDef(BaseModel):
+    type: str = "function"
+    function: OpenAIFunctionDef
+
+
+class OpenAIToolMessage(BaseModel):
+    role: str  # "tool"
+    content: str
+    tool_call_id: str
+# [END]
+
+
 class OpenAIChatRequest(BaseModel):
     model: str
     messages: list[OpenAIMessage]
@@ -91,6 +110,10 @@ class OpenAIChatRequest(BaseModel):
     repetition_penalty: float | None = None
     max_tokens: int | None = None
     stream_options: OpenAIStreamOptions | None = None
+    # [START] OpenAI function calling
+    tools: list[OpenAIToolDef] | None = None
+    tool_choice: str | dict[str, Any] | None = None
+    # [END]
 
 
 class OpenAICompletionRequest(BaseModel):
@@ -101,6 +124,52 @@ class OpenAICompletionRequest(BaseModel):
     top_p: float | None = None
     repetition_penalty: float | None = None
     max_tokens: int | None = None
+
+
+# [START] Tool call helpers — inject tool definitions into system prompt
+# and parse tool calls from model output
+import re as _re
+
+
+def _build_tools_system_prompt(tools: list[OpenAIToolDef]) -> str:
+    lines = ["You have access to the following tools. To call a tool, respond with a JSON block like: {\"name\": \"tool_name\", \"arguments\": {...}}"]
+    lines.append("")
+    for t in tools:
+        f = t.function
+        lines.append(f"### {f.name}")
+        if f.description:
+            lines.append(f.description)
+        if f.parameters:
+            lines.append(f"Parameters: {json.dumps(f.parameters)}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def _parse_tool_calls(content: str) -> tuple[str, list[dict[str, Any]]]:
+    """Extract tool calls from model output. Returns (remaining_text, tool_calls)."""
+    tool_calls: list[dict[str, Any]] = []
+    json_pattern = _re.compile(r'\{[^{}]*"name"\s*:\s*"[^"]+"\s*,\s*"arguments"\s*:\s*\{[^}]*\}[^}]*\}', _re.DOTALL)
+
+    for i, match in enumerate(json_pattern.finditer(content)):
+        try:
+            parsed = json.loads(match.group())
+            name = parsed.get("name", "")
+            args = parsed.get("arguments", {})
+            if name:
+                tool_calls.append({
+                    "id": f"call_{uuid.uuid4().hex[:12]}",
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "arguments": json.dumps(args) if isinstance(args, dict) else str(args),
+                    },
+                })
+        except (json.JSONDecodeError, KeyError):
+            continue
+
+    remaining = json_pattern.sub("", content).strip() if tool_calls else content
+    return remaining, tool_calls
+# [END]
 
 
 def _cap(mt: int | None) -> int:
@@ -148,10 +217,32 @@ async def chat_completions(req: OpenAIChatRequest):
     is_audio = "audio" in caps
     use_vlm = is_vision or is_audio
 
+    # [START] Inject tool definitions into system prompt if tools provided
+    tool_system_prefix = ""
+    if req.tools:
+        tool_system_prefix = _build_tools_system_prompt(req.tools)
+    # [END]
+
     normalized: list[tuple[str, str, list[str], list[str]]] = []
     for m in req.messages:
+        # [START] Handle role:tool messages (tool results)
+        if m.role == "tool":
+            content_str = m.content if isinstance(m.content, str) else str(m.content)
+            normalized.append(("user", f"[Tool result]: {content_str}", [], []))
+            continue
+        # [END]
         text, images, audios = _split_content(m.content)
+        # [START] Prepend tool definitions to first system message
+        if m.role == "system" and tool_system_prefix:
+            text = tool_system_prefix + "\n\n" + text
+            tool_system_prefix = ""
+        # [END]
         normalized.append((m.role, text, images, audios))
+
+    # [START] If no system message existed, inject tools as system message
+    if tool_system_prefix:
+        normalized.insert(0, ("system", tool_system_prefix, [], []))
+    # [END]
 
     has_any_images = any(imgs for _, _, imgs, _ in normalized)
     has_any_audios = any(auds for _, _, _, auds in normalized)
@@ -310,6 +401,16 @@ async def chat_completions(req: OpenAIChatRequest):
         if chunk.done:
             final_reason = chunk.finish_reason or "stop"
 
+    # [START] Parse tool calls from response if tools were requested
+    message: dict[str, Any] = {"role": "assistant", "content": content}
+    if req.tools:
+        remaining, tool_calls = _parse_tool_calls(content)
+        if tool_calls:
+            message["content"] = remaining or None
+            message["tool_calls"] = tool_calls
+            final_reason = "tool_calls"
+    # [END]
+
     return {
         "id": completion_id,
         "object": "chat.completion",
@@ -318,7 +419,7 @@ async def chat_completions(req: OpenAIChatRequest):
         "choices": [
             {
                 "index": 0,
-                "message": {"role": "assistant", "content": content},
+                "message": message,
                 "finish_reason": final_reason,
             }
         ],
