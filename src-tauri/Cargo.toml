@@ -1,6 +1,6 @@
 [package]
 name = "ovo"
-version = "0.0.1"
+version = "0.0.6"
 description = "OVO — Local MLX LLM runtime with desktop owl mascot"
 authors = ["OVO"]
 license = "MIT"
