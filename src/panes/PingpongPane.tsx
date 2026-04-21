@@ -269,6 +269,11 @@ export function PingpongPane() {
             reader.readAsDataURL(file);
           });
           parts.push({ type: "image_url", image_url: { url: dataUrl } });
+        } else if (file.type === "text/plain" || file.name.endsWith(".txt") || file.name.endsWith(".md")) {
+          const codeText = await file.text();
+          if (codeText.trim()) {
+            extractedBlocks.push(`[${file.name}]\n\`\`\`\n${codeText}\n\`\`\``);
+          }
         } else {
           try {
             const ext = await extractAttachmentText(file);
@@ -276,7 +281,8 @@ export function PingpongPane() {
               extractedBlocks.push(formatAttachedFileBlock(ext));
             }
           } catch {
-            extractedBlocks.push(`<attached_file filename="${file.name}">[extraction failed]</attached_file>`);
+            const fallback = await file.text().catch(() => "");
+            extractedBlocks.push(fallback.trim() ? `[${file.name}]\n${fallback}` : `[${file.name}: extraction failed]`);
           }
         }
       }
