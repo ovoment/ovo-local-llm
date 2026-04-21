@@ -667,8 +667,8 @@ export function PingpongPane() {
             className="w-full px-2.5 py-1.5 rounded-lg bg-ovo-surface border border-ovo-border text-xs text-ovo-text focus:outline-none focus:ring-1 focus:ring-ovo-accent"
           >
             <option value="">{t("pingpong.select_model")}</option>
-            {models.map((m) => (
-              <option key={m.repo_id} value={m.repo_id}>{m.repo_id.split("/").pop()}</option>
+            {models.map((m, i) => (
+              <option key={`${m.repo_id}-${i}`} value={m.repo_id}>{m.repo_id.split("/").pop()}</option>
             ))}
           </select>
           <input
@@ -693,8 +693,8 @@ export function PingpongPane() {
             className="w-full px-2.5 py-1.5 rounded-lg bg-ovo-surface border border-ovo-border text-xs text-ovo-text focus:outline-none focus:ring-1 focus:ring-ovo-accent"
           >
             <option value="">{t("pingpong.select_model")}</option>
-            {models.map((m) => (
-              <option key={m.repo_id} value={m.repo_id}>{m.repo_id.split("/").pop()}</option>
+            {models.map((m, i) => (
+              <option key={`${m.repo_id}-${i}`} value={m.repo_id}>{m.repo_id.split("/").pop()}</option>
             ))}
           </select>
           <input
