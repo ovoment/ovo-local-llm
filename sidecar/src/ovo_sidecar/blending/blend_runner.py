@@ -168,10 +168,7 @@ async def _run_blend(run: BlendRun, config: BlendConfig) -> None:
             run.progress = 0.9
             logger.info("Saving blended model to %s", output_dir)
 
-            from mlx_lm.utils import save_weights  # type: ignore[import-untyped]
-
             def _unflatten(flat: dict) -> dict:
-                """Reconstruct nested dict from dot-separated keys."""
                 tree: dict = {}
                 for key, val in flat.items():
                     parts = key.split(".")
@@ -181,7 +178,8 @@ async def _run_blend(run: BlendRun, config: BlendConfig) -> None:
                     d[parts[-1]] = val
                 return tree
 
-            save_weights(str(output_dir), _unflatten(merged))
+            from mlx_lm.utils import save_model  # type: ignore[import-untyped]
+            save_model(str(output_dir), weights=_unflatten(merged), tokenizer=tokenizer)
 
             tokenizer.save_pretrained(str(output_dir))
 
