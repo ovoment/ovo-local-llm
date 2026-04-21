@@ -219,18 +219,23 @@ export function FitOverview() {
         )}
 
         {sys && assessments.length > 0 && (
-          <div className="px-4 py-2 flex items-center gap-3 flex-wrap text-[11px] border-b border-ovo-border/60">
-            {(Object.entries(tierCounts) as Array<[FitTier, number]>)
-              .filter(([, n]) => n > 0)
-              .map(([tier, n]) => (
-                <div key={tier} className="flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${TIER_STYLE[tier].dot}`} />
-                  <span className="text-ovo-muted">
-                    <span className="text-ovo-text font-semibold">{n}</span>{" "}
-                    {t(`models.fit.tier.${tier}`)}
-                  </span>
-                </div>
-              ))}
+          <div className="px-4 py-2 flex items-center justify-between border-b border-ovo-border/60">
+            <div className="flex items-center gap-3 flex-wrap text-[11px]">
+              {(Object.entries(tierCounts) as Array<[FitTier, number]>)
+                .filter(([, n]) => n > 0)
+                .map(([tier, n]) => (
+                  <div key={tier} className="flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full ${TIER_STYLE[tier].dot}`} />
+                    <span className="text-ovo-muted">
+                      <span className="text-ovo-text font-semibold">{n}</span>{" "}
+                      {t(`models.fit.tier.${tier}`)}
+                    </span>
+                  </div>
+                ))}
+            </div>
+            <span className="text-[10px] text-ovo-muted/60">
+              {t("models.fit.mlx_notice", "MLX models run fastest on Apple Silicon")}
+            </span>
           </div>
         )}
 

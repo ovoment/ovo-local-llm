@@ -458,6 +458,7 @@
       "sidecar_offline": "사이드카 오프라인 — 적합도 측정 불가",
       "scanning": "스캔 중…",
       "lite_mode": "Lite Mode — 16GB RAM이 감지되었습니다. 7B Q4 모델만 권장됩니다. 최적 성능을 위해 설정에서 불필요한 기능을 비활성화하세요.",
+      "mlx_notice": "MLX 모델이 Apple Silicon에서 가장 빠릅니다",
       "empty": "아직 설치된 모델이 없습니다 — 아래에서 검색해서 추가해 보세요",
       "size_unknown": "크기 미상",
       "tier": {
