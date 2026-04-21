@@ -14,6 +14,7 @@ import { ModelsPane } from "../panes/ModelsPane";
 import { FitPane } from "../panes/FitPane";
 import { FinetunePane } from "../panes/FinetunePane";
 import { BlendingPane } from "../panes/BlendingPane";
+import { PingpongPane } from "../panes/PingpongPane";
 import { SettingsPane } from "../panes/SettingsPane";
 import { AboutPane } from "../panes/AboutPane";
 import { useSidecarStore } from "../store/sidecar";
@@ -232,6 +233,7 @@ export function AppShell() {
           {active === "wiki" && <WikiPane />}
           {active === "finetune" && <FinetunePane />}
           {active === "blending" && <BlendingPane />}
+          {active === "pingpong" && <PingpongPane />}
           {active === "models" && <ModelsPane />}
           {active === "fit" && <FitPane />}
           {active === "settings" && <SettingsPane />}

@@ -10,11 +10,28 @@
     "wiki": "위키",
     "finetune": "파인튜닝",
     "blending": "모델블랜딩",
+    "pingpong": "핑퐁",
     "models": "모델",
     "fit": "적합도",
     "settings": "설정",
     "about": "정보",
     "section_lab": "모델 랩"
+  },
+  "pingpong": {
+    "title": "핑퐁",
+    "subtitle": "두 모델이 대화합니다",
+    "select_model": "모델 선택",
+    "name_placeholder": "이름 (예: 짱구)",
+    "persona_placeholder": "페르소나 (예: 25년차 풀스택 코딩전문가)",
+    "user_placeholder": "대화에 참여하세요... (양쪽 모델에 전달됩니다)",
+    "empty": "모델을 선택하고 대화를 시작하세요",
+    "empty_slot": "모델 미선택",
+    "push_right": "왼쪽 답변을 오른쪽에 전달",
+    "push_left": "오른쪽 답변을 왼쪽에 전달",
+    "auto": "자동 대화 시작",
+    "stop": "중지",
+    "clear": "대화 초기화",
+    "you": "나"
   },
   "kb": {
     "title": "지식 베이스",

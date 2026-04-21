@@ -10,11 +10,28 @@
     "wiki": "Wiki",
     "finetune": "Finetune",
     "blending": "Blending",
+    "pingpong": "Ping Pong",
     "models": "Models",
     "fit": "Fit",
     "settings": "Settings",
     "about": "About",
     "section_lab": "Model Lab"
+  },
+  "pingpong": {
+    "title": "Ping Pong",
+    "subtitle": "Two models converse",
+    "select_model": "Select model",
+    "name_placeholder": "Name (e.g. Alice)",
+    "persona_placeholder": "Persona (e.g. 25yr full-stack expert)",
+    "user_placeholder": "Join the conversation... (sent to both models)",
+    "empty": "Select models and start the conversation",
+    "empty_slot": "No model",
+    "push_right": "Send left response to right",
+    "push_left": "Send right response to left",
+    "auto": "Start auto conversation",
+    "stop": "Stop",
+    "clear": "Clear conversation",
+    "you": "You"
   },
   "kb": {
     "title": "Knowledge Base",
