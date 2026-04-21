@@ -375,9 +375,13 @@ export function PingpongPane() {
     if (!slot.repoId) return "";
 
     const sysPrompt = buildSystemPrompt(slot, otherSlot);
+    const MAX_HISTORY = 20;
+    const history = slot.messages.length > MAX_HISTORY
+      ? slot.messages.slice(-MAX_HISTORY)
+      : slot.messages;
     const msgs: ChatWireMessage[] = [
       { role: "system", content: sysPrompt },
-      ...slot.messages,
+      ...history,
       ...(extraMessages ?? []),
     ];
 
