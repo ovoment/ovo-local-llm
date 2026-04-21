@@ -98,12 +98,12 @@ async def _run_training(run: TrainingRun) -> None:
                 config={"rank": run.config.lora_rank, "alpha": run.config.lora_rank, "dropout": 0.0, "scale": 1.0},
             )
 
-            from mlx_lm.tuner.datasets import ChatDataset  # type: ignore[import-untyped]
+            from mlx_lm.tuner.datasets import ChatDataset, CacheDataset  # type: ignore[import-untyped]
 
             raw_train = _load_jsonl(dataset.train_path)
             raw_valid = _load_jsonl(dataset.valid_path)
-            train_data = ChatDataset(raw_train, tokenizer)
-            valid_data = ChatDataset(raw_valid, tokenizer)
+            train_data = CacheDataset(ChatDataset(raw_train, tokenizer))
+            valid_data = CacheDataset(ChatDataset(raw_valid, tokenizer))
 
             iters_per_epoch = max(1, len(raw_train) // run.config.batch_size)
             total_iters = iters_per_epoch * run.config.epochs
