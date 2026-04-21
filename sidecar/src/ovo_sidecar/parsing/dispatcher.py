@@ -109,7 +109,7 @@ async def _parse_with_kordoc(path: Path) -> ParsedDocument:
     if not node or not kordoc:
         raise RuntimeError("kordoc runtime not available")
 
-    cmd = [str(node), str(kordoc), str(path), "--json"]
+    cmd = [str(node), str(kordoc), str(path), "--format", "json", "--silent"]
     logger.info("Parsing %s via kordoc: %s", path.name, " ".join(cmd))
 
     def _run() -> subprocess.CompletedProcess:
