@@ -168,18 +168,13 @@ async def _run_blend(run: BlendRun, config: BlendConfig) -> None:
             run.progress = 0.9
             logger.info("Saving blended model to %s", output_dir)
 
-            def _unflatten(flat: dict) -> dict:
-                tree: dict = {}
-                for key, val in flat.items():
-                    parts = key.split(".")
-                    d = tree
-                    for p in parts[:-1]:
-                        d = d.setdefault(p, {})
-                    d[parts[-1]] = val
-                return tree
+            from safetensors.numpy import save_file as _sf_save  # type: ignore[import-untyped]
+            import numpy as _np
 
-            from mlx_lm.utils import save_model  # type: ignore[import-untyped]
-            save_model(str(output_dir), weights=_unflatten(merged), tokenizer=tokenizer)
+            sf_dict = {}
+            for k, v in merged.items():
+                sf_dict[k] = _np.array(v)
+            _sf_save(sf_dict, str(output_dir / "model.safetensors"))
 
             tokenizer.save_pretrained(str(output_dir))
 
