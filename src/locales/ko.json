@@ -33,6 +33,7 @@
     "stop": "중지",
     "clear": "대화 초기화",
     "you": "주제",
+    "typing": "입력중....",
     "history": "대화 기록",
     "no_history": "저장된 대화가 없습니다",
     "at_hint": "@{{left}} 또는 @{{right}} 로 한쪽만 지목 가능",

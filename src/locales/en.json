@@ -33,6 +33,7 @@
     "stop": "Stop",
     "clear": "Clear conversation",
     "you": "Topic",
+    "typing": "typing....",
     "history": "Conversation history",
     "no_history": "No saved conversations",
     "at_hint": "Use @{{left}} or @{{right}} to target one model",

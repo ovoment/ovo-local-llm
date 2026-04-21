@@ -796,7 +796,7 @@ export function PingpongPane() {
                     <Loader2 className="w-3 h-3 animate-spin" />
                   </div>
                   {isThinking
-                    ? <div className="text-ovo-muted text-[11px] italic">생각 중...</div>
+                    ? <div className="text-ovo-muted text-[11px] italic">{t("pingpong.typing")}</div>
                     : <div className="text-ovo-text leading-relaxed">{renderBubbleContent(displayText)}</div>
                   }
                 </div>
@@ -810,7 +810,7 @@ export function PingpongPane() {
               }`}>
                 <div className="flex items-center gap-1.5">
                   <Loader2 className="w-3 h-3 animate-spin text-ovo-muted" />
-                  <span className="text-[11px] text-ovo-muted">모델 로딩 중...</span>
+                  <span className="text-[11px] text-ovo-muted">{t("pingpong.typing")}</span>
                 </div>
               </div>
             </div>
