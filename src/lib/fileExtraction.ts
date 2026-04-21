@@ -24,7 +24,7 @@ export interface ExtractedFile {
 // roughly 20 k tokens, which leaves comfortable headroom for the system
 // prompt, chat history, and the model's own answer. Users with 128 k+
 // context windows can pump this up via `setExtractionLimit()` later.
-const MAX_TEXT_BYTES = 80_000;
+const MAX_TEXT_BYTES = 200_000;
 
 const TEXT_EXTENSIONS = new Set([
   "txt", "md", "mdx", "csv", "tsv", "json", "jsonl", "ndjson",
