@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
 import { SidecarIndicator } from "./SidecarIndicator";
 import { ContextIndicator } from "./ContextIndicator";
-import { ToolModeSwitcher } from "./ToolModeSwitcher";
 import { useSessionsStore } from "../store/sessions";
 import type { NavKey } from "./Sidebar";
 
@@ -33,20 +32,7 @@ export function SystemStatusPopover({ open, active }: SystemStatusPopoverProps) 
         <ContextIndicator />
       </div>
 
-      {/* [START] Tool mode switcher — chat-tab only, always visible there so
-          plan / ask / bypass is one click away. */}
-      {active === "chat" && (
-        <>
-          <div className="h-px bg-ovo-border" aria-hidden="true" />
-          <div className="px-1 flex flex-col gap-1.5">
-            <span className="text-[10px] uppercase tracking-wider text-ovo-muted">
-              {t("chat.mode.label")}
-            </span>
-            <ToolModeSwitcher />
-          </div>
-        </>
-      )}
-      {/* [END] */}
+      {/* Tool mode moved to ChatPane input bar */}
 
       {/* Divider + trash button — only when chat tab is active and session has messages */}
       {active === "chat" && hasMessages && (
