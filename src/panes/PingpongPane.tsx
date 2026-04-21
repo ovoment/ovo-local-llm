@@ -389,7 +389,7 @@ export function PingpongPane() {
     let full = "";
     try {
       for await (const chunk of streamChat(
-        { model: slot.repoId, messages: msgs, max_tokens: 512 },
+        { model: slot.repoId, messages: msgs, max_tokens: 2048 },
         abortRef.current.signal,
         ports,
       )) {
