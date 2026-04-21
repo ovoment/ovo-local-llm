@@ -168,13 +168,7 @@ async def _run_blend(run: BlendRun, config: BlendConfig) -> None:
             run.progress = 0.9
             logger.info("Saving blended model to %s", output_dir)
 
-            from safetensors.numpy import save_file as _sf_save  # type: ignore[import-untyped]
-            import numpy as _np
-
-            sf_dict = {}
-            for k, v in merged.items():
-                sf_dict[k] = _np.array(v)
-            _sf_save(sf_dict, str(output_dir / "model.safetensors"))
+            mx.save_safetensors(str(output_dir / "model.safetensors"), merged)
 
             tokenizer.save_pretrained(str(output_dir))
 
