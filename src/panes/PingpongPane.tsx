@@ -781,10 +781,9 @@ export function PingpongPane() {
               </div>
             </div>
           ))}
-          {(() => {
-            if (!streaming || !streamingText) return null;
+          {streaming && streamingText && (() => {
             const displayText = stripThinkForStreaming(streamingText);
-            if (!displayText || displayText === "💭 ...") return null;
+            const isThinking = !displayText || displayText === "💭 ...";
             return (
               <div className={`flex gap-2 ${streamingSide === "left" ? "justify-start" : "justify-end"}`}>
                 <div className={`max-w-[75%] rounded-lg px-3 py-2 text-xs ${
@@ -796,11 +795,26 @@ export function PingpongPane() {
                     {streamingSide === "left" ? (left.name || "Left") : (right.name || "Right")}
                     <Loader2 className="w-3 h-3 animate-spin" />
                   </div>
-                  <div className="text-ovo-text leading-relaxed">{renderBubbleContent(displayText)}</div>
+                  {isThinking
+                    ? <div className="text-ovo-muted text-[11px] italic">생각 중...</div>
+                    : <div className="text-ovo-text leading-relaxed">{renderBubbleContent(displayText)}</div>
+                  }
                 </div>
               </div>
             );
           })()}
+          {streaming && !streamingText && (
+            <div className={`flex gap-2 ${streamingSide === "left" ? "justify-start" : "justify-end"}`}>
+              <div className={`rounded-lg px-3 py-2 text-xs ${
+                streamingSide === "left" ? "bg-ovo-accent/10 border border-ovo-accent/20" : "bg-emerald-500/10 border border-emerald-500/20"
+              }`}>
+                <div className="flex items-center gap-1.5">
+                  <Loader2 className="w-3 h-3 animate-spin text-ovo-muted" />
+                  <span className="text-[11px] text-ovo-muted">모델 로딩 중...</span>
+                </div>
+              </div>
+            </div>
+          )}
           <div ref={timelineEndRef} />
         </div>
 
