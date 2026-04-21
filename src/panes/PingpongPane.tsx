@@ -223,8 +223,14 @@ export function PingpongPane() {
     }
 
     if (full) {
-      // [START] Strip model template tokens from output
-      full = full.replace(/<\|[^|]*\|>/g, "").trim();
+      // [START] Strip model template tokens + thinking preamble
+      full = full.replace(/<\|[^|]*\|>/g, "");
+      const thinkEnd = full.search(/(?:Let's do (?:that|this|it)\.|Let's respond\.)(.)/i);
+      if (thinkEnd > 0) {
+        const matchLen = full.slice(thinkEnd).match(/^[^.]*\.\s*/)?.[0].length ?? 0;
+        full = full.slice(thinkEnd + matchLen);
+      }
+      full = full.replace(/^analysis/i, "").replace(/^assistantfinal/i, "").trim();
       // [END]
       const assistantMsg: ChatWireMessage = { role: "assistant", content: full };
       const setter = targetSide === "left" ? setLeft : setRight;
