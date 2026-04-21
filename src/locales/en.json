@@ -34,6 +34,7 @@
     "clear": "Clear conversation",
     "you": "Topic",
     "typing": "typing....",
+    "code": "Paste code",
     "history": "Conversation history",
     "no_history": "No saved conversations",
     "at_hint": "Use @{{left}} or @{{right}} to target one model",

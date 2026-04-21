@@ -898,40 +898,39 @@ export function PingpongPane() {
           </div>
         )}
 
-        {/* Input row */}
-        <div className="flex gap-2">
-          <div className="flex items-center gap-1.5 text-sky-400 shrink-0 relative" ref={attachMenuRef}>
-            <User className="w-4 h-4" />
+        {/* Input row — matches ChatInput design */}
+        <div className="flex items-end gap-2">
+          <div ref={attachMenuRef} className="relative shrink-0">
             <button
               type="button"
               onClick={() => setShowAttachMenu((v) => !v)}
-              className="p-1 rounded hover:bg-ovo-nav-active transition text-ovo-muted hover:text-ovo-accent"
-              title="첨부"
+              className="h-[40px] w-[40px] rounded-lg bg-ovo-surface-solid border border-ovo-border text-ovo-muted hover:bg-ovo-bg hover:text-ovo-text flex items-center justify-center transition"
+              title={t("chat.attach")}
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
             </button>
             {showAttachMenu && (
-              <div className="absolute bottom-full left-0 mb-2 bg-ovo-surface border border-ovo-border rounded-lg shadow-lg py-1 z-50 min-w-[140px]">
+              <div className="absolute z-20 bottom-full mb-1 left-0 min-w-[220px] rounded-lg bg-ovo-surface-solid border border-ovo-border shadow-lg py-1">
                 <button
                   type="button"
-                  onClick={() => { fileInputRef.current?.click(); }}
-                  className="w-full px-3 py-1.5 text-left text-xs text-ovo-text hover:bg-ovo-nav-active flex items-center gap-2"
+                  onClick={() => { fileInputRef.current?.click(); setShowAttachMenu(false); }}
+                  className="w-full text-left px-3 py-2 flex items-center gap-2 text-sm text-ovo-text hover:bg-ovo-bg transition"
                 >
-                  <Paperclip className="w-3.5 h-3.5" /> 파일 첨부
+                  <Paperclip className="w-4 h-4 text-ovo-muted" /> {t("chat.attach_file")}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setCodeInput(""); setShowAttachMenu(false); }}
-                  className="w-full px-3 py-1.5 text-left text-xs text-ovo-text hover:bg-ovo-nav-active flex items-center gap-2"
+                  className="w-full text-left px-3 py-2 flex items-center gap-2 text-sm text-ovo-text hover:bg-ovo-bg transition"
                 >
-                  <Code2 className="w-3.5 h-3.5" /> 코드
+                  <Code2 className="w-4 h-4 text-ovo-muted" /> {t("pingpong.code")}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setUrlInput(true); setShowAttachMenu(false); }}
-                  className="w-full px-3 py-1.5 text-left text-xs text-ovo-text hover:bg-ovo-nav-active flex items-center gap-2"
+                  className="w-full text-left px-3 py-2 flex items-center gap-2 text-sm text-ovo-text hover:bg-ovo-bg transition"
                 >
-                  <Link className="w-3.5 h-3.5" /> URL
+                  <Link className="w-4 h-4 text-ovo-muted" /> URL
                 </button>
               </div>
             )}
