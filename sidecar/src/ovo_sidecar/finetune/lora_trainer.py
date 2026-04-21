@@ -94,7 +94,7 @@ async def _run_training(run: TrainingRun) -> None:
 
             linear_to_lora_layers(
                 model,
-                lora_layers=run.config.lora_layers,
+                num_layers=run.config.lora_layers,
                 lora_parameters={"rank": run.config.lora_rank},
             )
 
