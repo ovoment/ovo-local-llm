@@ -21,7 +21,7 @@ export const BUILTIN_TOOLS: McpTool[] = [
   {
     name: "web_search",
     description:
-      "OVO 내장 인터넷 검색 (DuckDuckGo 기반, API 키 불필요). 최신 정보가 필요할 때 사용.",
+      "OVO 내장 인터넷 검색 (DuckDuckGo 기반). 사용자가 명시적으로 웹 검색을 요청하거나, 최신 뉴스·실시간 정보·URL 조회가 필요한 경우에만 사용. 일반 질문에는 사용하지 말 것.",
     input_schema: {
       type: "object",
       properties: {
@@ -516,9 +516,10 @@ export function buildToolsSystemMessage(tools: McpTool[]): string {
   return [
     "## TOOLS",
     "",
-    "You have access to these tools. When the user asks for information you",
-    "don't have in your head (web content, their stored memory, past chats),",
-    "CALL THE TOOL instead of guessing. Do not hallucinate — use the tools.",
+    "You have access to these tools. Use them ONLY when appropriate:",
+    "- web_search: ONLY when the user explicitly asks to search the web, or asks about real-time/latest news.",
+    "- memory_*: when recalling past conversations or stored facts.",
+    "Do NOT call tools for general knowledge questions you can answer directly.",
     "",
     "To call a tool, emit EXACTLY this format and nothing else:",
     "",
