@@ -32,7 +32,7 @@
     "auto": "Start auto conversation",
     "stop": "Stop",
     "clear": "Clear conversation",
-    "you": "You",
+    "you": "Topic",
     "history": "Conversation history",
     "no_history": "No saved conversations",
     "at_hint": "Use @{{left}} or @{{right}} to target one model",
