@@ -1,5 +1,5 @@
 // [START] PingpongPane — two named models with personas, history, @targeting, attachments.
-import { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeftRight, ArrowRight, ArrowLeft, Play, Square, Send,
@@ -62,6 +62,21 @@ function stripThinkForDisplay(text: string): string {
   return clean.length > 0 ? clean.join("\n\n") : stripped || text;
 }
 // [END]
+
+function renderBubbleContent(text: string): React.ReactNode {
+  const parts = text.split(/(```[\s\S]*?```)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("```") && part.endsWith("```")) {
+      const code = part.slice(3, -3).replace(/^\w*\n/, "");
+      return (
+        <pre key={i} className="my-2 p-2 rounded border border-dashed border-ovo-border bg-ovo-bg text-[11px] font-mono overflow-x-auto whitespace-pre-wrap break-all">
+          {code}
+        </pre>
+      );
+    }
+    return part ? <span key={i} className="whitespace-pre-wrap">{part}</span> : null;
+  });
+}
 
 interface DisplayMessage {
   speaker: string;
@@ -468,7 +483,24 @@ export function PingpongPane() {
     setAttachments([]);
     // [END]
 
-    const displayMsg: DisplayMessage = { speaker: t("pingpong.you"), role: "user", content: text, side: "user" };
+    // [START] Build display content with attachment previews
+    let displayContent = text;
+    for (const a of attachments) {
+      if (a.kind === "file") {
+        if (a.file.type === "text/plain" || a.file.name.endsWith(".txt") || a.file.name.endsWith(".md")) {
+          const codeText = await a.file.text();
+          displayContent = `${displayContent}\n\`\`\`\n${codeText}\n\`\`\``.trim();
+        } else {
+          displayContent = `${displayContent}\n📎 ${a.file.name}`.trim();
+        }
+      } else if (a.kind === "url") {
+        displayContent = `${displayContent}\n🔗 ${a.url}`.trim();
+      }
+    }
+    const attachNames = attachments.map((a) => a.kind === "file" ? a.file.name : a.kind === "url" ? a.url : "").filter(Boolean);
+    const speaker = attachNames.length > 0 ? attachNames.join(", ") : t("pingpong.you");
+    const displayMsg: DisplayMessage = { speaker, role: "user", content: displayContent, side: "user" };
+    // [END]
     setTimeline((prev) => [...prev, displayMsg]);
     void persistMessage(displayMsg);
 
@@ -680,7 +712,7 @@ export function PingpongPane() {
                 }`}>
                   {msg.speaker}
                 </div>
-                <div className="whitespace-pre-wrap text-ovo-text leading-relaxed">{msg.role === "assistant" ? stripThinkForDisplay(msg.content) : msg.content}</div>
+                <div className="text-ovo-text leading-relaxed">{renderBubbleContent(msg.role === "assistant" ? stripThinkForDisplay(msg.content) : msg.content)}</div>
               </div>
             </div>
           ))}
@@ -695,7 +727,7 @@ export function PingpongPane() {
                   {streamingSide === "left" ? (left.name || "Left") : (right.name || "Right")}
                   <Loader2 className="w-3 h-3 animate-spin" />
                 </div>
-                <div className="whitespace-pre-wrap text-ovo-text leading-relaxed">{stripThinkForDisplay(streamingText)}</div>
+                <div className="text-ovo-text leading-relaxed">{renderBubbleContent(stripThinkForDisplay(streamingText))}</div>
               </div>
             </div>
           )}
