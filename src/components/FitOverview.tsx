@@ -202,6 +202,16 @@ export function FitOverview() {
           </div>
         }
       >
+        {/* [START] 16GB Lite Mode banner */}
+        {sys && sys.memory.total_bytes <= 17_179_869_184 && (
+          <div className="px-4 py-2 text-xs text-amber-400 bg-amber-500/5 border-b border-amber-500/20 flex items-center gap-2">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span>
+              {t("models.fit.lite_mode", "Lite Mode — 16GB RAM detected. Only 7B Q4 models are recommended. Disable extra features in Settings for best performance.")}
+            </span>
+          </div>
+        )}
+        {/* [END] */}
         {error && (
           <div className="px-4 py-2 text-xs text-rose-400 bg-rose-500/5 border-b border-rose-500/20">
             {error}

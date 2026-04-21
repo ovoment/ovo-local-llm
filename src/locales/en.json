@@ -457,6 +457,7 @@
       "free": "free",
       "sidecar_offline": "Sidecar offline — Fit scoring unavailable",
       "scanning": "Scanning…",
+      "lite_mode": "Lite Mode — 16GB RAM detected. Only 7B Q4 models are recommended. Disable extra features in Settings for best performance.",
       "empty": "No models installed yet — search below to add one.",
       "size_unknown": "size?",
       "tier": {
