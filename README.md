@@ -50,7 +50,7 @@
 
 ---
 
-## 💻 Code — a local coding agent with hands
+## Code — a local coding agent with hands
 
 <p align="center">
   <img src="docs/images/code.png" alt="OVO Code IDE" width="860">
@@ -58,13 +58,13 @@
 
 Monaco editor + file explorer + Git panel + PTY terminal + AI inline completion. The Agent Chat on the right gets file read/write/search/exec tools and MCP server integration — it can actually do the work, not just describe it. Like Claude Code, but running on your Mac with any open LLM.
 
-## ✨ Also included
+## Also included
 
-### 💬 Chat — every open LLM, one interface
+### Chat — every open LLM, one interface
 
 Native Ollama/OpenAI API compatibility, streaming responses, persona switching, file attachments (PDF / Excel / Word / images), voice input + TTS.
 
-### 🖼️ Image generation — diffusion on your laptop
+### Image generation — diffusion on your laptop
 
 <p align="center">
   <img src="docs/images/image.png" alt="OVO image generation" width="860">
@@ -72,7 +72,7 @@ Native Ollama/OpenAI API compatibility, streaming responses, persona switching, 
 
 Local text-to-image via `diffusers`. Sampler / steps / CFG / LoRA controls.
 
-### 📚 Wiki — persistent knowledge across sessions
+### Wiki — persistent knowledge across sessions
 
 <p align="center">
   <img src="docs/images/wiki.png" alt="OVO wiki" width="860">
@@ -80,7 +80,7 @@ Local text-to-image via `diffusers`. Sampler / steps / CFG / LoRA controls.
 
 Curated notes + auto-captured session logs with BM25 + semantic search. Context that survives restarts.
 
-### 🤖 Models — HuggingFace-native, zero re-downloads
+### Models — HuggingFace-native, zero re-downloads
 
 <p align="center">
   <img src="docs/images/models.png" alt="OVO models tab" width="860">
@@ -88,7 +88,7 @@ Curated notes + auto-captured session logs with BM25 + semantic search. Context 
 
 Auto-detects `~/.cache/huggingface/hub/` + LM Studio cache — models you already have just show up. Download from URL or search HuggingFace directly.
 
-### 🧭 Hardware fit — pick a model that actually runs
+### Hardware fit — pick a model that actually runs
 
 <p align="center">
   <img src="docs/images/hardwarefit.png" alt="OVO hardware fit" width="860">
@@ -96,7 +96,7 @@ Auto-detects `~/.cache/huggingface/hub/` + LM Studio cache — models you alread
 
 Scores every model against your RAM / GPU / context headroom. Know before you download.
 
-### 🦉 Desktop mascot
+### Desktop mascot
 
 <p align="center">
   <img src="docs/images/pet1.png" alt="Owl — thinking" width="320">
@@ -106,7 +106,7 @@ Scores every model against your RAM / GPU / context headroom. Know before you do
 
 An SVG owl that reacts to your coding state. Double-click to summon the main window.
 
-## 📦 Install
+## Install
 
 1. Download the latest `OVO_x.y.z_aarch64.dmg` from [**Releases**](https://github.com/ovoment/ovo-local-llm/releases).
 2. Open the DMG and drag **OVO.app** onto the **Applications** shortcut.
@@ -159,14 +159,14 @@ recent macOS), prefix with `sudo`.
 
 > **16 GB users:** Only 7B quantized (Q4) models run comfortably. Disable extra features in **Settings → Feature Flags** (Wiki, Skills, MCP) to keep the system prompt lean and maximize response speed. The **Hardware Fit** tab shows which models actually fit your machine.
 
-## 🚀 Quick start
+## Quick start
 
 1. Launch OVO.
 2. Go to **Models**, pick a model (Qwen3, Llama 3.3, Gemma, Mistral, DeepSeek, …), click download.
 3. Open **Chat** and send a message — the local model answers, no network calls.
 4. Open a project folder in **Code** to use the IDE + Agent Chat.
 
-## 🔌 API compatibility
+## API compatibility
 
 | Flavor | Port | Use case |
 |--------|:----:|----------|
@@ -174,7 +174,7 @@ recent macOS), prefix with `sudo`.
 | OpenAI | `11436` | Point any OpenAI SDK at `http://localhost:11436/v1` |
 | Native | `11437` | OVO-specific endpoints — model management, Wiki, streaming, voice |
 
-## 🤝 Claude Code integration (opt-in)
+## Claude Code integration (opt-in)
 
 OVO can **read** your local Claude Code config so the same context reaches your local model:
 
@@ -184,7 +184,7 @@ OVO can **read** your local Claude Code config so the same context reaches your 
 
 Disabled by default. Flip it on in **Settings → Claude Integration**. OVO never touches claude.ai, API keys, session tokens, or anything that could affect your Claude account.
 
-## 🛠️ Development
+## Development
 
 ```bash
 git clone https://github.com/ovoment/ovo-local-llm.git
@@ -204,7 +204,7 @@ Release build: `npm run tauri build` — produces `.app` + `.dmg` under your Car
 
 Deeper docs: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/ARCHITECTURE.en.md](docs/ARCHITECTURE.en.md) · [docs/release/BUILD.md](docs/release/BUILD.md) · [docs/release/SECURITY.md](docs/release/SECURITY.md) · [docs/release/PRIVACY.md](docs/release/PRIVACY.md)
 
-## 🧱 Architecture
+## Architecture
 
 - **Shell** — Tauri 2 (Rust)
 - **Frontend** — React 18 + TypeScript + Tailwind + shadcn/ui + Monaco
@@ -212,7 +212,7 @@ Deeper docs: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/ARCHITECTURE.
 - **Runtimes** — `mlx-lm`, `mlx-vlm`, `mlx-whisper`, `transformers`, `diffusers`
 - **Storage** — SQLite (chats + Wiki), local filesystem (attachments, models)
 
-## ☕ Support
+## Support
 
 OVO is a solo-developer project. Every coffee funds one more model architecture I can patch and support.
 
@@ -220,7 +220,7 @@ OVO is a solo-developer project. Every coffee funds one more model architecture 
   <a href="https://ko-fi.com/ovoment"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi"></a>
 </p>
 
-## 📜 License
+## License
 
 [MIT](LICENSE) — use it, fork it, ship it.
 
