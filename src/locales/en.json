@@ -89,7 +89,16 @@
     "method_dare_title": "Sparse Random Drop",
     "method_dare_desc": "Drop low-magnitude weights before merging",
     "method_slerp_title": "Spherical Interpolation",
-    "method_slerp_desc": "Smooth blend between two models"
+    "method_slerp_desc": "Smooth blend between two models",
+    "method_linear_desc": "Simple weighted average mix",
+    "name_placeholder": "Blended model name (e.g. Code+Korean)",
+    "select_model_a": "Select Model A",
+    "select_model_b": "Select Model B",
+    "start_blend": "Start Blending",
+    "blend_started": "Started blending \"{{name}}\"",
+    "blend_done": "\"{{name}}\" blending complete!",
+    "my_models": "My Blended Models",
+    "confirm_delete": "Delete blended model \"{{name}}\"?"
   },
   "code": {
     "title": "Code",

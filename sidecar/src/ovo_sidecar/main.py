@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from ovo_sidecar import __version__
-from ovo_sidecar.api import ollama, openai, ovo, parsing, finetune
+from ovo_sidecar.api import ollama, openai, ovo, parsing, finetune, blending
 from ovo_sidecar.config import settings
 
 logger = logging.getLogger("ovo_sidecar")
@@ -125,6 +125,7 @@ def create_app(api_flavor: str) -> FastAPI:
         app.include_router(ovo.router, prefix="/ovo")
         app.include_router(parsing.router, prefix="/ovo")
         app.include_router(finetune.router, prefix="/ovo")
+        app.include_router(blending.router, prefix="/ovo")
 
     @app.get("/healthz")
     async def healthz():

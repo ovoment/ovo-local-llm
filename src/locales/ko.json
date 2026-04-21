@@ -89,7 +89,16 @@
     "method_dare_title": "희소 랜덤 드롭",
     "method_dare_desc": "중요도 낮은 가중치 제거 후 병합",
     "method_slerp_title": "구면 선형 보간",
-    "method_slerp_desc": "두 모델 사이 부드러운 블렌딩"
+    "method_slerp_desc": "두 모델 사이 부드러운 블렌딩",
+    "method_linear_desc": "가중 평균으로 단순 혼합",
+    "name_placeholder": "블렌딩 모델 이름 (예: 코딩+한국어)",
+    "select_model_a": "모델 A 선택",
+    "select_model_b": "모델 B 선택",
+    "start_blend": "블렌딩 시작",
+    "blend_started": "\"{{name}}\" 블렌딩을 시작합니다",
+    "blend_done": "\"{{name}}\" 블렌딩 완료!",
+    "my_models": "내 블렌딩 모델",
+    "confirm_delete": "\"{{name}}\" 블렌딩 모델을 삭제하시겠습니까?"
   },
   "code": {
     "title": "코드",
