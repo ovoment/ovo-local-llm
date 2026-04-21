@@ -139,7 +139,6 @@ async def _run_training(run: TrainingRun) -> None:
             try:
                 train(
                     model=model,
-                    tokenizer=tokenizer,
                     optimizer=optimizer,
                     train_dataset=train_data,
                     val_dataset=valid_data,
