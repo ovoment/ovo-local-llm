@@ -860,6 +860,34 @@ export const useChatStore = create<ChatStoreState>((set, get) => {
       if (typeof pickMax === "number" && pickMax > 0) samplingParams.max_tokens = pickMax;
       // [END]
 
+      // [START] RAG auto-inject — search active KBs and prepend context
+      try {
+        const { useKBStore } = await import("./knowledge_base");
+        const activeKBIds = useKBStore.getState().activeKBIds;
+        if (activeKBIds.length > 0) {
+          const { searchKB } = await import("../lib/parsing");
+          const lastUserMsg = wire.filter(m => m.role === "user").pop();
+          const query = typeof lastUserMsg?.content === "string" ? lastUserMsg.content : "";
+          if (query) {
+            const results = await Promise.all(
+              activeKBIds.map(kbId => searchKB(kbId, query, 3, ports).catch(() => ({ results: [] })))
+            );
+            const chunks = results.flatMap(r => r.results);
+            if (chunks.length > 0) {
+              const ragContext = chunks.map((c, i) =>
+                `[${i + 1}] ${c.source}: ${c.text}`
+              ).join("\n\n");
+              const ragMsg: ChatWireMessage = {
+                role: "system",
+                content: `다음은 사용자의 지식 베이스에서 검색된 관련 문서입니다. 답변에 참고하세요:\n\n${ragContext}`,
+              };
+              wire.splice(1, 0, ragMsg);
+            }
+          }
+        }
+      } catch { /* RAG is best-effort */ }
+      // [END]
+
       for await (const frame of streamChat(
         { model: modelRef, messages: normalizeWire(wire), ...samplingParams },
         abortController.signal,

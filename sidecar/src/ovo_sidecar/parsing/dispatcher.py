@@ -79,7 +79,65 @@ async def parse_file(path: Path) -> ParsedDocument:
     if ext in (".txt", ".md", ".csv", ".json"):
         return await _parse_plaintext(path)
 
-    return await _parse_with_kordoc(path)
+    if ext == ".pptx":
+        return await _parse_pptx(path)
+
+    doc = await _parse_with_kordoc(path)
+
+    if ext == ".pdf" and len(doc.full_text.strip()) < 50 and doc.pages > 0:
+        logger.info("PDF appears to be scanned/image-based, attempting OCR: %s", path.name)
+        try:
+            ocr_doc = await _ocr_pdf(path)
+            if len(ocr_doc.full_text.strip()) > len(doc.full_text.strip()):
+                return ocr_doc
+        except Exception as e:
+            logger.warning("OCR failed for %s: %s", path.name, e)
+
+    return doc
+
+
+async def _parse_pptx(path: Path) -> ParsedDocument:
+    """Parse PPTX using python-pptx (kordoc doesn't support PPTX)."""
+    def _extract() -> tuple[str, list[ParsedSection]]:
+        from pptx import Presentation  # type: ignore[import-untyped]
+        prs = Presentation(str(path))
+        parts: list[str] = []
+        sections: list[ParsedSection] = []
+        for i, slide in enumerate(prs.slides, 1):
+            title = ""
+            texts: list[str] = []
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    for para in shape.text_frame.paragraphs:
+                        text = para.text.strip()
+                        if text:
+                            if not title:
+                                title = text
+                            texts.append(text)
+                if shape.has_table:
+                    table = shape.table
+                    for row in table.rows:
+                        row_texts = [cell.text.strip() for cell in row.cells]
+                        texts.append(" | ".join(row_texts))
+            slide_md = f"# Slide {i}" + (f": {title}" if title else "") + "\n\n" + "\n".join(texts)
+            parts.append(slide_md)
+            if title:
+                sections.append(ParsedSection(title=title, heading_level=1, page=i))
+        return "\n\n---\n\n".join(parts), sections
+
+    full_text, sections = await asyncio.to_thread(_extract)
+    return ParsedDocument(
+        doc_id=_new_id(),
+        filename=path.name,
+        mime=_detect_mime(path),
+        source_path=str(path),
+        file_hash=file_hash(path),
+        pages=len(sections),
+        full_text=full_text,
+        sections=sections,
+        tokens_estimate=_estimate_tokens(full_text),
+        parsed_at=_now_kst(),
+    )
 
 
 async def _parse_plaintext(path: Path) -> ParsedDocument:
@@ -168,6 +226,55 @@ async def _parse_with_kordoc(path: Path) -> ParsedDocument:
         tokens_estimate=_estimate_tokens(markdown),
         parsed_at=_now_kst(),
         warnings=[str(w) for w in warnings],
+    )
+
+
+async def _ocr_pdf(path: Path) -> ParsedDocument:
+    """OCR a scanned PDF — render pages as images, run VLM text extraction."""
+    def _extract() -> str:
+        import fitz  # type: ignore[import-untyped] — pymupdf
+        doc = fitz.open(str(path))
+        pages_text: list[str] = []
+        for i, page in enumerate(doc):
+            pix = page.get_pixmap(dpi=200)
+            img_bytes = pix.tobytes("png")
+
+            import base64
+            b64 = base64.b64encode(img_bytes).decode()
+            data_url = f"data:image/png;base64,{b64}"
+
+            from ovo_sidecar.mlx_vlm_runner import vlm_runner
+            import asyncio
+            loop = asyncio.new_event_loop()
+            try:
+                result = loop.run_until_complete(
+                    vlm_runner.generate(
+                        prompt="이 이미지의 모든 텍스트를 정확히 읽어서 그대로 출력해주세요. 다른 설명 없이 텍스트만.",
+                        images=[data_url],
+                        max_tokens=2048,
+                    )
+                )
+                pages_text.append(f"# Page {i + 1}\n\n{result.text}")
+            except Exception as e:
+                logger.warning("OCR failed for page %d: %s", i + 1, e)
+                pages_text.append(f"# Page {i + 1}\n\n[OCR failed]")
+            finally:
+                loop.close()
+        doc.close()
+        return "\n\n".join(pages_text)
+
+    full_text = await asyncio.to_thread(_extract)
+    return ParsedDocument(
+        doc_id=_new_id(),
+        filename=path.name,
+        mime="application/pdf",
+        source_path=str(path),
+        file_hash=file_hash(path),
+        pages=full_text.count("# Page "),
+        full_text=full_text,
+        tokens_estimate=_estimate_tokens(full_text),
+        parsed_at=_now_kst(),
+        warnings=["OCR-extracted"],
     )
 
 
