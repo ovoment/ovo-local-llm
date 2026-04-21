@@ -63,6 +63,17 @@ function stripThinkForDisplay(text: string): string {
 }
 // [END]
 
+function stripThinkForStreaming(text: string): string {
+  if (THINKING_MARKERS.test(text)) {
+    const stripped = stripThinkForDisplay(text);
+    if (stripped === text || THINKING_MARKERS.test(stripped)) {
+      return "💭 ...";
+    }
+    return stripped;
+  }
+  return stripThinkForDisplay(text);
+}
+
 function renderBubbleContent(text: string): React.ReactNode {
   const parts = text.split(/(```[\s\S]*?```)/g);
   return parts.map((part, i) => {
@@ -781,7 +792,7 @@ export function PingpongPane() {
                   {streamingSide === "left" ? (left.name || "Left") : (right.name || "Right")}
                   <Loader2 className="w-3 h-3 animate-spin" />
                 </div>
-                <div className="text-ovo-text leading-relaxed">{renderBubbleContent(stripThinkForDisplay(streamingText))}</div>
+                <div className="text-ovo-text leading-relaxed">{renderBubbleContent(stripThinkForStreaming(streamingText))}</div>
               </div>
             </div>
           )}
