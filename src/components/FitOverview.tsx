@@ -8,7 +8,7 @@
 // quality / speed / context-length axes and pull everything into its own
 // Fit pane.
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Cpu,
@@ -19,7 +19,6 @@ import {
   AlertCircle,
   Download,
   Check,
-  ChevronDown,
 } from "lucide-react";
 import {
   getSystemInfo,
@@ -162,89 +161,88 @@ export function FitOverview({ hideRecommendations = false }: { hideRecommendatio
     );
   }
 
-  const hwSummaryChip = sys && (
-    <div className="flex items-center gap-3 text-[11px] text-ovo-muted">
-      <span className="flex items-center gap-1">
-        <Cpu className="w-3 h-3" />
-        {t("models.fit.cores", { count: sys.cpu.logical_cores })}
-        {sys.gpu.unified && (
-          <span className="ml-1 text-ovo-accent">· {t("models.fit.unified_gpu")}</span>
-        )}
-      </span>
-      <span className="flex items-center gap-1">
-        <MemoryStick className="w-3 h-3" />
-        {formatBytes(sys.memory.total_bytes)}
-      </span>
-      <span className="flex items-center gap-1">
-        <HardDrive className="w-3 h-3" />
-        {formatBytes(sys.disk.free_bytes)}
-      </span>
-    </div>
-  );
-
   return (
-    <div className="flex flex-col gap-3">
-      {/* [START] Phase 8 — Collapsible Hardware Fit card.
-          Header always visible with a condensed HW summary so the user
-          can skim the machine specs at a glance; expanding reveals the
-          tier summary + per-model rows. State persists under a stable
-          localStorage key so the panel remembers its posture between
-          app launches. */}
-      <FitCard
-        storageKey="ovo:fit:hardware"
-        defaultOpen
-        title={t("models.fit.title")}
-        icon={<Sparkles className="w-4 h-4 text-ovo-accent shrink-0" />}
-        headerRight={
-          <div className="flex items-center gap-3">
-            {loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-ovo-muted" />}
-            {hwSummaryChip}
+    <div className="flex flex-col gap-4">
+      {/* [START] HW spec banner */}
+      {sys && (
+        <div className="grid grid-cols-4 gap-3">
+          <div className="p-3 rounded-lg bg-ovo-surface border border-ovo-border text-center">
+            <Cpu className="w-4 h-4 text-ovo-accent mx-auto mb-1" />
+            <div className="text-sm font-semibold text-ovo-text">{sys.cpu.brand || "Apple Silicon"}</div>
+            <div className="text-[10px] text-ovo-muted">{sys.cpu.logical_cores} {t("models.fit.cores_unit")}</div>
           </div>
-        }
-      >
-        {/* [START] 16GB Lite Mode banner */}
-        {sys && sys.memory.total_bytes <= 17_179_869_184 && (
-          <div className="px-4 py-2 text-xs text-amber-400 bg-amber-500/5 border-b border-amber-500/20 flex items-center gap-2">
-            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-            <span>
-              {t("models.fit.lite_mode", "Lite Mode — 16GB RAM detected. Only 7B Q4 models are recommended. Disable extra features in Settings for best performance.")}
-            </span>
+          <div className="p-3 rounded-lg bg-ovo-surface border border-ovo-border text-center">
+            <Sparkles className="w-4 h-4 text-ovo-accent mx-auto mb-1" />
+            <div className="text-sm font-semibold text-ovo-text">{sys.gpu.unified ? t("models.fit.unified_gpu") : "GPU"}</div>
+            <div className="text-[10px] text-ovo-muted">{sys.gpu.kind || "Metal"}</div>
           </div>
-        )}
-        {/* [END] */}
-        {error && (
-          <div className="px-4 py-2 text-xs text-rose-400 bg-rose-500/5 border-b border-rose-500/20">
-            {error}
+          <div className="p-3 rounded-lg bg-ovo-surface border border-ovo-border text-center">
+            <MemoryStick className="w-4 h-4 text-ovo-accent mx-auto mb-1" />
+            <div className="text-sm font-semibold text-ovo-text">{formatBytes(sys.memory.total_bytes)}</div>
+            <div className="text-[10px] text-ovo-muted">RAM</div>
           </div>
-        )}
+          <div className="p-3 rounded-lg bg-ovo-surface border border-ovo-border text-center">
+            <HardDrive className="w-4 h-4 text-ovo-accent mx-auto mb-1" />
+            <div className="text-sm font-semibold text-ovo-text">{formatBytes(sys.disk.free_bytes)}</div>
+            <div className="text-[10px] text-ovo-muted">{t("models.fit.disk_free")}</div>
+          </div>
+        </div>
+      )}
+      {/* [END] */}
 
-        {sys && assessments.length > 0 && (
-          <div className="px-4 py-2 flex items-center justify-between border-b border-ovo-border/60">
-            <div className="flex items-center gap-3 flex-wrap text-[11px]">
-              {(Object.entries(tierCounts) as Array<[FitTier, number]>)
-                .filter(([, n]) => n > 0)
-                .map(([tier, n]) => (
-                  <div key={tier} className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full ${TIER_STYLE[tier].dot}`} />
-                    <span className="text-ovo-muted">
-                      <span className="text-ovo-text font-semibold">{n}</span>{" "}
-                      {t(`models.fit.tier.${tier}`)}
-                    </span>
-                  </div>
-                ))}
-            </div>
-            <span className="text-[10px] text-ovo-muted/60">
-              {t("models.fit.mlx_notice", "MLX models run fastest on Apple Silicon")}
-            </span>
-          </div>
-        )}
+      {loading && (
+        <div className="flex items-center gap-2 text-xs text-ovo-muted">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          {t("models.fit.scanning")}
+        </div>
+      )}
 
-        {assessments.length === 0 ? (
-          <div className="px-4 py-6 text-center text-xs text-ovo-muted">
-            {loading ? t("models.fit.scanning") : t("models.fit.empty")}
+      {/* [START] 16GB Lite Mode banner */}
+      {sys && sys.memory.total_bytes <= 17_179_869_184 && (
+        <div className="px-4 py-2 rounded-lg text-xs text-amber-400 bg-amber-500/5 border border-amber-500/20 flex items-center gap-2">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <span>
+            {t("models.fit.lite_mode", "Lite Mode — 16GB RAM detected. Only 7B Q4 models are recommended. Disable extra features in Settings for best performance.")}
+          </span>
+        </div>
+      )}
+      {/* [END] */}
+      {error && (
+        <div className="px-4 py-2 rounded-lg text-xs text-rose-400 bg-rose-500/5 border border-rose-500/20">
+          {error}
+        </div>
+      )}
+
+      {/* [START] Tier summary bar */}
+      {sys && assessments.length > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 flex-wrap text-[11px]">
+            {(Object.entries(tierCounts) as Array<[FitTier, number]>)
+              .filter(([, n]) => n > 0)
+              .map(([tier, n]) => (
+                <div key={tier} className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${TIER_STYLE[tier].dot}`} />
+                  <span className="text-ovo-muted">
+                    <span className="text-ovo-text font-semibold">{n}</span>{" "}
+                    {t(`models.fit.tier.${tier}`)}
+                  </span>
+                </div>
+              ))}
+          </div>
+          <span className="text-[10px] text-ovo-muted/60">
+            {t("models.fit.mlx_notice", "MLX models run fastest on Apple Silicon")}
+          </span>
+        </div>
+      )}
+      {/* [END] */}
+
+      {/* [START] Model fit list — full width, no scroll container */}
+      {assessments.length === 0 && !loading ? (
+        <div className="py-6 text-center text-xs text-ovo-muted">
+          {t("models.fit.empty")}
           </div>
         ) : (
-          <ul className="max-h-96 overflow-y-auto divide-y divide-ovo-border/40">
+          <ul className="divide-y divide-ovo-border/40 rounded-lg border border-ovo-border overflow-hidden">
             {assessments.map(({ model, est, fit }) => {
               // [START] Phase 5 — llmfit-style row metadata.
               // Compute once per row; none of these helpers mutate so we can
@@ -328,99 +326,16 @@ export function FitOverview({ hideRecommendations = false }: { hideRecommendatio
             })}
           </ul>
         )}
-      </FitCard>
       {/* [END] */}
 
-      {/* [START] Phase 8 — Collapsible Recommendations card. */}
+      {/* [START] Recommendations — full width, no card wrapper */}
       {sys && !hideRecommendations && (
-        <FitCard
-          storageKey="ovo:fit:recommended"
-          defaultOpen={false}
-          title={t("models.fit.recommended_title")}
-          icon={<Download className="w-4 h-4 text-ovo-accent shrink-0" />}
-          headerRight={
-            <span className="text-[10px] text-ovo-muted">
-              {t("models.fit.recommended_hint")}
-            </span>
-          }
-        >
-          <RecommendedModels sys={sys} installed={models} />
-        </FitCard>
+        <RecommendedModels sys={sys} installed={models} />
       )}
       {/* [END] */}
     </div>
   );
 }
-
-// [START] FitCard — lightweight collapsible wrapper with persisted state.
-// Separate from CollapsibleSection (Settings-styled) because the Fit cards
-// live inside ModelsPane and want a chip-like boxed look, not Settings'
-// bordered list style.
-function readOpen(id: string, fallback: boolean): boolean {
-  try {
-    const raw = localStorage.getItem(id);
-    if (raw === "true") return true;
-    if (raw === "false") return false;
-    return fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeOpen(id: string, v: boolean): void {
-  try {
-    localStorage.setItem(id, v ? "true" : "false");
-  } catch {
-    /* storage unavailable — silent */
-  }
-}
-
-interface FitCardProps {
-  storageKey: string;
-  defaultOpen?: boolean;
-  title: string;
-  icon?: ReactNode;
-  headerRight?: ReactNode;
-  children: ReactNode;
-}
-
-function FitCard({
-  storageKey,
-  defaultOpen = false,
-  title,
-  icon,
-  headerRight,
-  children,
-}: FitCardProps) {
-  const [open, setOpen] = useState<boolean>(() => readOpen(storageKey, defaultOpen));
-  useEffect(() => {
-    writeOpen(storageKey, open);
-  }, [storageKey, open]);
-
-  return (
-    <section className="rounded-xl border border-ovo-border bg-ovo-surface overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="w-full px-4 py-3 flex items-center gap-3 flex-wrap text-left hover:bg-ovo-bg/30 transition-colors"
-      >
-        <ChevronDown
-          className={`w-3.5 h-3.5 text-ovo-muted transition-transform ${
-            open ? "" : "-rotate-90"
-          }`}
-          aria-hidden
-        />
-        {icon}
-        <div className="text-xs font-semibold text-ovo-text">{title}</div>
-        <div className="flex-1" />
-        {headerRight}
-      </button>
-      {open && <div className="border-t border-ovo-border">{children}</div>}
-    </section>
-  );
-}
-// [END]
 
 // [START] RecommendedModels — catalog → ranked list of install suggestions.
 // Catalog is loaded dynamically (remote → bundled fallback) so the app

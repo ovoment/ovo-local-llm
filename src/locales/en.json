@@ -563,6 +563,8 @@
     "fit": {
       "title": "Hardware Fit",
       "cores": "{{count}} cores",
+      "cores_unit": "Cores",
+      "disk_free": "Free",
       "unified_gpu": "unified GPU",
       "free": "free",
       "sidecar_offline": "Sidecar offline — Fit scoring unavailable",

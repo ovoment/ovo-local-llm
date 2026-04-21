@@ -15,7 +15,7 @@ import {
   type SystemInfo,
 } from "../lib/api";
 import { RecommendedModels } from "../components/FitOverview";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2, Zap, Star, Gem } from "lucide-react";
 import type { HfSearchResult, DownloadTask } from "../lib/api";
 import { DownloadCell } from "../components/DownloadCell";
 import {
@@ -655,9 +655,9 @@ export function ModelsPane() {
     return score > bestScore ? m : best;
   }, null);
   const recs = [
-    { label: t("models.rec.fastest"), icon: "🏆", model: fastest },
-    { label: t("models.rec.most_used"), icon: "⭐", model: mostUsed },
-    { label: t("models.rec.best_value"), icon: "💎", model: bestValue },
+    { label: t("models.rec.fastest"), Icon: Zap, model: fastest },
+    { label: t("models.rec.most_used"), Icon: Star, model: mostUsed },
+    { label: t("models.rec.best_value"), Icon: Gem, model: bestValue },
   ].filter((r) => r.model !== null);
   // [END]
 
@@ -730,21 +730,19 @@ export function ModelsPane() {
       {activeTab === "installed" && (
         <>
           {recs.length > 0 && (
-            <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
               {recs.map((r) =>
                 r.model ? (
                   <button
                     key={r.label}
                     type="button"
                     onClick={() => r.model && void mountModel(r.model.repo_id)}
-                    className="text-left p-3 rounded-lg bg-ovo-surface border border-ovo-border flex flex-col gap-1 hover:bg-ovo-surface-solid transition"
+                    className="text-left p-3 rounded-lg bg-ovo-surface border border-ovo-border hover:bg-ovo-surface-solid transition text-center"
                     title={r.model.repo_id}
                   >
-                    <div className="text-[10px] uppercase tracking-wide text-ovo-muted flex items-center gap-1">
-                      <span aria-hidden>{r.icon}</span>
-                      <span>{r.label}</span>
-                    </div>
-                    <div className="text-sm text-ovo-text truncate font-medium">
+                    <r.Icon className="w-4 h-4 text-ovo-accent mx-auto mb-1" aria-hidden />
+                    <div className="text-[10px] uppercase tracking-wide text-ovo-muted">{r.label}</div>
+                    <div className="text-sm text-ovo-text truncate font-medium mt-1">
                       {r.model.repo_id.split("/").pop() ?? r.model.repo_id}
                     </div>
                     <div className={`text-[11px] font-mono ${perfColor(perfStats[r.model.repo_id]?.avg_tokens_per_sec ?? 0)}`}>

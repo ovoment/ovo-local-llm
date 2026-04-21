@@ -563,6 +563,8 @@
     "fit": {
       "title": "하드웨어 적합도",
       "cores": "{{count}}코어",
+      "cores_unit": "코어",
+      "disk_free": "여유 공간",
       "unified_gpu": "통합 GPU",
       "free": "사용 가능",
       "sidecar_offline": "사이드카 오프라인 — 적합도 측정 불가",
