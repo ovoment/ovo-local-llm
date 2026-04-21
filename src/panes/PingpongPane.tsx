@@ -176,9 +176,10 @@ export function PingpongPane() {
     parts.push(`[${otherName}]: 로 시작하는 메시지는 ${otherName}이 한 말입니다. 그 내용에 직접 반응하세요.`);
     parts.push("규칙:");
     parts.push(`1. 당신은 "${myName}"입니다. 항상 ${myName}의 입장에서 말하세요.`);
-    parts.push("2. 상대방의 의견에 동의하거나 반박하며 대화를 이어가세요.");
-    parts.push("3. 2-3문장으로 짧게 답하세요. 튜토리얼이나 목록을 쓰지 마세요.");
-    parts.push("4. 사용자가 쓴 언어와 같은 언어로 답하세요.");
+    parts.push("2. 사용자가 준 주제/질문에 대해 구체적으로 토론하세요. 인사나 겸손은 건너뛰세요.");
+    parts.push("3. 상대방의 의견에 동의하거나 반박하되, 새로운 정보나 관점을 추가하세요.");
+    parts.push("4. 2-3문장으로 짧고 핵심만. 튜토리얼이나 목록 금지.");
+    parts.push("5. 사용자가 쓴 언어와 같은 언어로 답하세요.");
     return parts.join("\n");
   };
 
@@ -330,8 +331,11 @@ export function PingpongPane() {
           setAutoMode(true);
           let lastLeft = leftResponse;
           let lastRight = rightResponse;
+          let turns = 0;
+          const MAX_AUTO_TURNS = 5;
           try {
-            while (autoRef.current) {
+            while (autoRef.current && turns < MAX_AUTO_TURNS) {
+              turns++;
               const toLeft: ChatWireMessage = { role: "user", content: `[${rightName}]: ${lastRight}` };
               setLeft((prev) => ({ ...prev, messages: [...prev.messages, toLeft] }));
               lastLeft = await generateResponse("left", [toLeft]);
