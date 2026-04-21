@@ -36,35 +36,17 @@
   <img src="docs/images/chat.png" alt="OVO chat" width="860">
 </p>
 
-## 🆕 What's New in v0.0.6
+## What's New in v0.0.6
 
-### 📎 Document Parsing & RAG
-- **PPTX / HWP / HWPX** parsing via kordoc + sidecar
-- **OCR for scanned PDFs** — extract text from image-based PDFs
-- **RAG auto-inject** — Knowledge Base documents automatically retrieved and injected into chat context
+**Document parsing & RAG** — PPTX, HWP, HWPX parsing via kordoc. OCR for scanned PDFs. Knowledge Base auto-injects relevant docs into chat context.
 
-### 🧬 LoRA Fine-Tuning
-- Full pipeline: dataset creation → training → adapter merge
-- Supports `mlx-lm` LoRA with configurable rank, layers, epochs
-- Adapter merge (fuse) into standalone models
+**LoRA fine-tuning** — Dataset creation, training, adapter merge. Full `mlx-lm` pipeline with configurable rank/layers/epochs.
 
-### 🔀 Model Blending
-- Merge two same-architecture models with **SLERP / Linear / TIES / DARE** methods
-- Interactive GUI with progress tracking
+**Model blending** — Merge two same-architecture models via SLERP, Linear, TIES, or DARE. Progress tracking GUI included.
 
-### 🏓 Ping Pong — Enhanced
-- **File / Code / URL attachments** — attach documents and code to debates
-- **Editor-style code blocks** — dark background, line numbers, language header
-- **Thinking removal** — model reasoning hidden, only answers displayed
-- **Long response splitting** — auto-split into multiple bubbles (300 char threshold)
-- **"typing..." indicator** — shows loading state during model inference (i18n)
-- **Topic label** — user messages labeled as "Topic" instead of "You"
+**Ping Pong upgrades** — File/code/URL attachments, editor-style code blocks (dark bg + line numbers), auto-split long responses into multiple bubbles, typing indicator, thinking content stripped from output.
 
-### 🔧 Improvements
-- **Web search** restricted to explicit user requests only
-- **Settings UI** reorganized into card-grouped sections
-- **File extraction limit** increased from 80 KB to 200 KB
-- **Mac model name** (M4 Max, etc.) displayed in hardware spec cards
+**Other changes** — Web search only fires on explicit request. Settings page grouped into card sections. File extraction limit raised to 200 KB. Mac chip name shown in hardware cards.
 
 ---
 
