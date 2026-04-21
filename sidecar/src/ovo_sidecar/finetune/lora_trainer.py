@@ -156,6 +156,22 @@ async def _run_training(run: TrainingRun) -> None:
                 run.status = "cancelled"
                 return
 
+            # [START] Save adapter_config.json for mlx_lm load_adapters compatibility
+            adapter_config = {
+                "fine_tune_type": "lora",
+                "num_layers": run.config.lora_layers,
+                "lora_parameters": {
+                    "rank": run.config.lora_rank,
+                    "alpha": run.config.lora_rank,
+                    "dropout": 0.0,
+                    "scale": 1.0,
+                },
+            }
+            (adapter_path / "adapter_config.json").write_text(
+                json.dumps(adapter_config, indent=2)
+            )
+            # [END]
+
             adapter = Adapter(
                 adapter_id=run.run_id,
                 name=run.adapter_name,
