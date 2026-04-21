@@ -186,6 +186,34 @@ class HfDownloader:
                 task.finished_at = time.time()
                 logger.exception("file fetch failed: %s/%s", task.repo_id, sib.rfilename)
                 return
+
+            # [START] LFS pointer detection + size verification
+            local_path = Path(local)
+            if local_path.exists():
+                try:
+                    with open(local_path, "rb") as f:
+                        head = f.read(128)
+                    if b"git-lfs.github.com/spec/v1" in head:
+                        local_path.unlink(missing_ok=True)
+                        task.status = "error"
+                        task.error = f"LFS pointer detected for {sib.rfilename} — file not resolved. Check repo access or try again."
+                        task.finished_at = time.time()
+                        logger.error("LFS pointer: %s/%s", task.repo_id, sib.rfilename)
+                        return
+                except OSError:
+                    pass
+
+                expected = int(sib.size or 0)
+                actual = local_path.stat().st_size
+                if expected > 0 and actual < expected * 0.95:
+                    local_path.unlink(missing_ok=True)
+                    task.status = "error"
+                    task.error = f"Size mismatch for {sib.rfilename}: expected {expected} bytes, got {actual}. Download may be incomplete."
+                    task.finished_at = time.time()
+                    logger.error("size mismatch: %s/%s expected=%d actual=%d", task.repo_id, sib.rfilename, expected, actual)
+                    return
+            # [END]
+
             # Snapshot dir is the file's parent (cache layout:
             # .../snapshots/<rev>/<filename>); stash once.
             if last_snapshot_path is None:
