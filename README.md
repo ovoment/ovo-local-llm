@@ -88,6 +88,13 @@ Curated notes + auto-captured session logs with BM25 + semantic search. Context 
 
 Auto-detects `~/.cache/huggingface/hub/` + LM Studio cache — models you already have just show up. Download from URL or search HuggingFace directly.
 
+OVO is model-agnostic. Recommended by origin:
+- **US** — Llama (Meta), Gemma (Google), Phi (Microsoft)
+- **EU** — Mistral / Mixtral (Mistral AI, France)
+- **Asia** — Qwen (Alibaba), DeepSeek, GLM
+
+All models run fully local — no data leaves your machine.
+
 ### Hardware fit — pick a model that actually runs
 
 <p align="center">

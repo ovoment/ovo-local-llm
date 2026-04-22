@@ -82,6 +82,13 @@ Monaco 에디터 + 파일 탐색기 + Git 패널 + PTY 터미널 + AI 인라인 
 
 `~/.cache/huggingface/hub/` + LM Studio 캐시를 자동 감지. 이미 받아둔 모델은 그대로 목록에 뜸. Tier 뱃지 (Supported / Experimental), tok/s 벤치마크, vision / audio 능력 플래그 표시.
 
+OVO는 모델에 구애받지 않습니다. 출처별 추천:
+- **미국** — Llama (Meta), Gemma (Google), Phi (Microsoft)
+- **유럽** — Mistral / Mixtral (Mistral AI, 프랑스)
+- **아시아** — Qwen (Alibaba), DeepSeek, GLM
+
+모든 모델은 완전히 로컬에서 실행 — 데이터가 기기를 떠나지 않습니다.
+
 ### Hardware Fit — 내 맥에 진짜로 돌아가는 모델
 
 <p align="center">
